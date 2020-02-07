@@ -94,28 +94,6 @@ void WindowObjCInt::createWindow(void)
 
 @end
 
-@implementation WinDel
-- (void)applicationDidFinishLaunching:(NSNotification *)notification
-{
-    // UNUSED_PARAMETER(notification);
-    NSLog(@"Application finished launching");
-}
-
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)app
-{
-    // UNUSED_PARAMETER(app);
-
-    return NO;
-}
-
-- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
-{
-    // UNUSED_PARAMETER(sender);
-    return NSTerminateNow;
-}
-
-@end
-
 @implementation MyOpenGLView
 
 
