@@ -69,6 +69,8 @@ void WindowObjCInt::createWindow(void)
                     ];
 
             win.backgroundColor = [NSColor redColor];
+            [win setOpaque:NO];
+            win.alphaValue = 0.5f;
             [parentWin addChildWindow:win ordered:NSWindowAbove];
         }
     }
