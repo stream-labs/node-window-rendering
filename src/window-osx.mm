@@ -72,6 +72,20 @@ void WindowObjCInt::createWindow(void)
             [win setOpaque:NO];
             win.alphaValue = 0.5f;
             [parentWin addChildWindow:win ordered:NSWindowAbove];
+
+            NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(100, 100, 100, 100)];
+            [view setWantsLayer:YES];
+            view.layer.backgroundColor = [[NSColor yellowColor] CGColor];
+
+            [win.contentView addSubview:view];
+
+            NSRect frame = NSMakeRect(10, 40, 90, 40);
+            NSButton* pushButton = [[NSButton alloc] initWithFrame: frame]; 
+            pushButton.bezelStyle = NSRoundedBezelStyle;
+
+            [win.contentView addSubview:pushButton];
+
+            NSLog(@"subviews are %@", [win.contentView subviews]);  
         }
     }
 
