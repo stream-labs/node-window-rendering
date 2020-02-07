@@ -16,6 +16,14 @@ include(CPack)
 
 nodejs_init()
 
+find_package(OpenGL REQUIRED)
+
+find_library(COREAUDIO CoreAudio)
+find_library(AUDIOUNIT AudioUnit)
+find_library(COREFOUNDATION CoreFoundation)
+find_library(IOSURF IOSurface)
+find_library(COCOA Cocoa)
+
 #############################
 # Source, Libraries & Directories
 #############################
@@ -35,6 +43,12 @@ SET(PROJECT_LIBRARIES
 SET(PROJECT_INCLUDE_PATHS
 	${NODEJS_INCLUDE_DIRS}
 	"${CMAKE_SOURCE_DIR}/source/"
+	${OPENGL_INCLUDE_DIR}
+	${COREAUDIO}
+	${AUDIOUNIT}
+	${COREFOUNDATION}
+	${IOSURF}
+	${COCOA}
 )
 
 #############################
@@ -48,6 +62,12 @@ add_nodejs_module(
 TARGET_LINK_LIBRARIES(
 	${PROJECT_NAME}
 	${PROJECT_LIBRARIES}
+	${OPENGL_gl_LIBRARY}
+	${COREAUDIO}
+	${AUDIOUNIT}
+	${COREFOUNDATION}
+	${IOSURF}
+	${COCOA}
 )
 
 TARGET_INCLUDE_DIRECTORIES(

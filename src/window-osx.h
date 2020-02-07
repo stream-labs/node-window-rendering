@@ -18,9 +18,13 @@
 
 #import "Foundation/Foundation.h"
 #import <Cocoa/Cocoa.h>
+#import <OpenGL/gl.h>
 
 #include "window-osx-obj-c-int.h"
 #include "window-osx-int.hpp"
 
 @interface WindowImplObj : NSObject
+@end
+
+@interface MyOpenGLView : NSOpenGLView
 @end

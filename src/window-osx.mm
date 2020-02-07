@@ -73,7 +73,7 @@ void WindowObjCInt::createWindow(void)
             win.alphaValue = 0.5f;
             [parentWin addChildWindow:win ordered:NSWindowAbove];
 
-            NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(100, 100, 100, 100)];
+            MyOpenGLView *view = [[MyOpenGLView alloc] initWithFrame:NSMakeRect(100, 100, 100, 100)];
             [view setWantsLayer:YES];
             view.layer.backgroundColor = [[NSColor yellowColor] CGColor];
 
@@ -112,6 +112,28 @@ void WindowObjCInt::createWindow(void)
 {
     // UNUSED_PARAMETER(sender);
     return NSTerminateNow;
+}
+
+@end
+
+@implementation MyOpenGLView
+
+
+- (void)drawRect:(NSRect)rect
+{
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glColor3f(1, .85, .35);
+	glBegin(GL_TRIANGLES);
+	{
+		glVertex3f(0, 0.6, 0);
+		glVertex3f(-0.2, -0.3, 0);
+		glVertex3f(.2, -.3, 0);
+	}
+	glEnd();
+
+	glFlush();
 }
 
 @end
