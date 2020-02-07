@@ -16,21 +16,24 @@
 
 ******************************************************************************/
 
-#include <node.h>
 #include "window-osx-int.hpp"
+#include "window-osx-obj-c-int.h"
 
-using namespace v8;
+WindowInt::WindowInt(void)
+    : _impl (nullptr)
+{   }
 
-void createWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
+void WindowInt::init(void)
 {
-    WindowInt *window = new WindowInt();
-    window->init();
-    window->createWindow();
+    _impl = new WindowObjCInt();
 }
 
-void init(Local<Object> exports) {
-    /// Functions ///
-    NODE_SET_METHOD(exports, "createWindow", createWindowJS);
+WindowInt::~WindowInt(void)
+{
+    if (_impl) { delete _impl; _impl = nullptr; }
 }
 
-NODE_MODULE(uiohookModule, init)
+void WindowInt::createWindow(void)
+{
+    _impl->createWindow();
+}

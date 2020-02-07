@@ -21,6 +21,11 @@ nodejs_init()
 #############################
 SET(PROJECT_SOURCE
 	"${PROJECT_SOURCE_DIR}/src/module.cpp"
+	"${PROJECT_SOURCE_DIR}/src/window-osx.mm"
+	"${PROJECT_SOURCE_DIR}/src/window-osx.h"
+	"${PROJECT_SOURCE_DIR}/src/window-osx-obj-c-int.h"
+	"${PROJECT_SOURCE_DIR}/src/window-osx-int.hpp"
+	"${PROJECT_SOURCE_DIR}/src/window-osx-int.cpp"
 )
 
 SET(PROJECT_LIBRARIES

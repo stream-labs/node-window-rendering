@@ -16,21 +16,22 @@
 
 ******************************************************************************/
 
-#include <node.h>
-#include "window-osx-int.hpp"
+#ifndef __WINDOW_CLASS_H__
+#define __WINDOW_CLASS_H__
 
-using namespace v8;
+class WindowObjCInt;
 
-void createWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
+class WindowInt
 {
-    WindowInt *window = new WindowInt();
-    window->init();
-    window->createWindow();
-}
+public:
+    WindowInt (void);
+    ~WindowInt(void);
 
-void init(Local<Object> exports) {
-    /// Functions ///
-    NODE_SET_METHOD(exports, "createWindow", createWindowJS);
-}
+    void init(void);
+    void createWindow(void);
 
-NODE_MODULE(uiohookModule, init)
+private:
+    WindowObjCInt * _impl;
+};
+
+#endif

@@ -1,7 +1,7 @@
 {
   "name": "node-window-rendering",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "main.js",
   "repository": "git@github.com:stream-labs/node-window-rendering.git",
   "author": "Eddy Gharbi <eddygharbiema@gmail.com>",
   "license": "MIT"
