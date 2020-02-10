@@ -28,3 +28,5 @@
 
 @interface MyOpenGLView : NSOpenGLView
 @end
+
+MyOpenGLView *view;
