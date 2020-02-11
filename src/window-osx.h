@@ -18,6 +18,10 @@
 
 #import "Foundation/Foundation.h"
 #import <Cocoa/Cocoa.h>
+#import <OpenGL/OpenGL.h>
+#import <OpenGL/gl3.h>
+#import <OpenGL/CGLIOSurface.h>
+#import <GLKit/GLKit.h>
 #import <OpenGL/gl.h>
 
 #include "window-osx-obj-c-int.h"
@@ -29,4 +33,5 @@
 @interface MyOpenGLView : NSOpenGLView
 @end
 
-MyOpenGLView *view;
+GLuint quadVAOId, quadVBOId;
+BOOL quadInit;

@@ -23,6 +23,7 @@ find_library(AUDIOUNIT AudioUnit)
 find_library(COREFOUNDATION CoreFoundation)
 find_library(IOSURF IOSurface)
 find_library(COCOA Cocoa)
+find_library(GLKIT GLKit)
 
 #############################
 # Source, Libraries & Directories
@@ -49,6 +50,7 @@ SET(PROJECT_INCLUDE_PATHS
 	${COREFOUNDATION}
 	${IOSURF}
 	${COCOA}
+	${GLKIT}
 )
 
 #############################
@@ -68,6 +70,7 @@ TARGET_LINK_LIBRARIES(
 	${COREFOUNDATION}
 	${IOSURF}
 	${COCOA}
+	${GLKIT}
 )
 
 TARGET_INCLUDE_DIRECTORIES(
