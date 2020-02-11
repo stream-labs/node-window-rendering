@@ -299,103 +299,6 @@ CreateTextureThroughIOSurface(NSSize size, CGLContextObj cglContextObj, void (^d
 
 @end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-int screenID = 0;
-NSScreen *screen;
-NSRect frame;
-bool hide_cursor = true;
-CGDisplayStreamRef disp;
-IOSurfaceRef current, prev;
-pthread_mutex_t mutex;
-GLuint			_surfaceTexture;
-
-void update_display_stream(CGDisplayStreamFrameStatus status,
-					 uint64_t display_time,
-					 IOSurfaceRef frame_surface,
-					 CGDisplayStreamUpdateRef update_ref)
-{
-    NSLog(@"Update display");
-
-    if (status == kCGDisplayStreamFrameStatusStopped) {
-		// os_event_signal(dc->disp_finished);
-		return;
-	}
-
-	IOSurfaceRef prev_current = NULL;
-
-	if (frame_surface && !pthread_mutex_lock(&mutex)) {
-        // NSLog(@"Valid frame");
-		prev_current = current;
-		current = frame_surface;
-		CFRetain(current);
-		IOSurfaceIncrementUseCount(current);
-		pthread_mutex_unlock(&mutex);
-	} else {
-        NSLog(@"Invalid frame");
-    }
-
-	if (prev_current) {
-		IOSurfaceDecrementUseCount(prev_current);
-		CFRelease(prev_current);
-	}
-}
-
-void init_display_stream(void) {
-	screen = [[NSScreen screens][screenID] retain];
-
-	frame = [screen convertRectToBacking:screen.frame];
-
-	NSNumber *screen_num = screen.deviceDescription[@"NSScreenNumber"];
-	CGDirectDisplayID disp_id = (CGDirectDisplayID)(size_t)screen_num.pointerValue;
-
-	NSDictionary *rect_dict =
-		CFBridgingRelease(CGRectCreateDictionaryRepresentation(
-			CGRectMake(0, 0, screen.frame.size.width,
-				   screen.frame.size.height)));
-
-	CFBooleanRef show_cursor_cf = hide_cursor ? kCFBooleanFalse
-						      : kCFBooleanTrue;
-
-	NSDictionary *dict = @{
-		(__bridge NSString *)kCGDisplayStreamSourceRect: rect_dict,
-		(__bridge NSString *)kCGDisplayStreamQueueDepth: @5,
-		(__bridge NSString *)
-		kCGDisplayStreamShowCursor: (id)show_cursor_cf,
-	};
-
-    const CGSize *size = &frame.size;
-	disp = CGDisplayStreamCreateWithDispatchQueue(
-		disp_id, size->width, size->height, 'BGRA',
-		(__bridge CFDictionaryRef)dict,
-		dispatch_queue_create(NULL, NULL),
-		^(CGDisplayStreamFrameStatus status, uint64_t displayTime,
-		  IOSurfaceRef frameSurface,
-		  CGDisplayStreamUpdateRef updateRef) {
-			update_display_stream(status, displayTime,
-					      frameSurface, updateRef);
-		});
-
-    bool started = !CGDisplayStreamStart(disp);
-
-    if(started)
-        NSLog(@"Stream started");
-    else
-        NSLog(@"Stream didn't started");
-}
-
 @implementation WindowImplObj
 
 WindowObjCInt::WindowObjCInt(void)
@@ -455,42 +358,12 @@ void WindowObjCInt::createWindow(void)
 
             [win.contentView addSubview:view];
 
-            NSRect frame = NSMakeRect(10, 40, 90, 40);
-            NSButton* pushButton = [[NSButton alloc] initWithFrame: frame]; 
-            pushButton.bezelStyle = NSRoundedBezelStyle;
-
-            [win.contentView addSubview:pushButton];
 
             NSLog(@"subviews are %@", [win.contentView subviews]);
-            pthread_mutex_init(&mutex, NULL);
-
-            init_display_stream();
         }
     }
 
     CFRelease(windowList);
-}
-
-@end
-
-@implementation MyOpenGLView
-
-
-- (void)drawRect:(NSRect)rect
-{
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	glColor3f(1, .85, .35);
-	glBegin(GL_TRIANGLES);
-	{
-		glVertex3f(0, 0.6, 0);
-		glVertex3f(-0.2, -0.3, 0);
-		glVertex3f(.2, -.3, 0);
-	}
-	glEnd();
-
-	glFlush();
 }
 
 @end
