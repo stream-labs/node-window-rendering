@@ -33,7 +33,7 @@ WindowInt::~WindowInt(void)
     if (_impl) { delete _impl; _impl = nullptr; }
 }
 
-void WindowInt::createWindow(void)
+void WindowInt::createWindow(uint32_t surfaceID)
 {
-    _impl->createWindow();
+    _impl->createWindow(surfaceID);
 }

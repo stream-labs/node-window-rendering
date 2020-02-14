@@ -19,6 +19,8 @@
 #ifndef __WINDOW_CLASS_H__
 #define __WINDOW_CLASS_H__
 
+#include <stdint.h>
+
 class WindowObjCInt;
 
 class WindowInt
@@ -28,7 +30,7 @@ public:
     ~WindowInt(void);
 
     void init(void);
-    void createWindow(void);
+    void createWindow(uint32_t surfaceID);
 
 private:
     WindowObjCInt * _impl;

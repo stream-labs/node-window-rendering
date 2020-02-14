@@ -19,6 +19,9 @@
 #ifndef __WINDOW_OBJC_INTERFACE_H__
 #define __WINDOW_OBJC_INTERFACE_H__
 
+
+#include <stdint.h>
+
 class WindowObjCInt
 {
 public:
@@ -26,7 +29,7 @@ public:
     ~WindowObjCInt(void);
 
     void init(void);
-    void createWindow(void);
+    void createWindow(uint32_t surfaceID);
 
 private:
     void * self;

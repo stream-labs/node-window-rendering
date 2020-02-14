@@ -20,6 +20,7 @@
 
 #include <iostream>
 
+IOSurfaceRef surface;
 
 @interface TestView: NSView
 {
@@ -153,36 +154,50 @@ CreateTexture(NSSize size, void (^drawCallback)(CGContextRef ctx))
 static GLuint
 CreateTextureThroughIOSurface(NSSize size, CGLContextObj cglContextObj, void (^drawCallback)(CGContextRef ctx))
 {
-  int width = size.width;
-  int height = size.height;
+  // int width = size.width;
+  // int height = size.height;
 
-  NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:
-                         [NSNumber numberWithInt:width], kIOSurfaceWidth,
-                         [NSNumber numberWithInt:height], kIOSurfaceHeight,
-                         [NSNumber numberWithInt:4], kIOSurfaceBytesPerElement,
-                         // [NSNumber numberWithBool:YES], kIOSurfaceIsGlobal,
-                         nil];
+  // NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:
+  //                        [NSNumber numberWithInt:width], kIOSurfaceWidth,
+  //                        [NSNumber numberWithInt:height], kIOSurfaceHeight,
+  //                        [NSNumber numberWithInt:4], kIOSurfaceBytesPerElement,
+  //                        // [NSNumber numberWithBool:YES], kIOSurfaceIsGlobal,
+  //                        nil];
 
-  IOSurfaceRef surf = IOSurfaceCreate((CFDictionaryRef)dict);
-  IOSurfaceLock(surf, 0, NULL);
-  void* data = IOSurfaceGetBaseAddress(surf);
-  size_t stride = IOSurfaceGetBytesPerRow(surf);
+  // IOSurfaceRef surf = IOSurfaceCreate((CFDictionaryRef)dict);
+  // IOSurfaceLock(surf, 0, NULL);
+  // void* data = IOSurfaceGetBaseAddress(surf);
+  // size_t stride = IOSurfaceGetBytesPerRow(surf);
 
-  CGColorSpaceRef rgb = CGColorSpaceCreateDeviceRGB();
-  CGContextRef imgCtx = CGBitmapContextCreate(data, width, height, 8, stride,
-                                              rgb, kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host);
-  CGColorSpaceRelease(rgb);
-  drawCallback(imgCtx);
+  // CGColorSpaceRef rgb = CGColorSpaceCreateDeviceRGB();
+  // CGContextRef imgCtx = CGBitmapContextCreate(data, width, height, 8, stride,
+  //                                             rgb, kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host);
+  // CGColorSpaceRelease(rgb);
+  // drawCallback(imgCtx);
 
-  IOSurfaceUnlock(surf, 0, NULL);
+  // IOSurfaceUnlock(surf, 0, NULL);
+
+  int width = IOSurfaceGetWidth(surface);
+  int height = IOSurfaceGetHeight(surface);
+  int sizeAlloc = IOSurfaceGetAllocSize(surface);
+  bool inUse = IOSurfaceIsInUse(surface);
+
+  std::cout << "surface width: " << width << std::endl;
+  std::cout << "surface height: " << width << std::endl;
+  std::cout << "surface sizeAlloc: " << sizeAlloc << std::endl;
+  std::cout << "surface inUse: " << inUse << std::endl;
+
 
   GLuint texture = 0;
   glActiveTexture(GL_TEXTURE0);
   glGenTextures(1, &texture);
   glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture);
 
+  // CGLTexImageIOSurface2D(cglContextObj, GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, width, height, 
+  //                        GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surf, 0);
+
   CGLTexImageIOSurface2D(cglContextObj, GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, width, height, 
-                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surf, 0);
+                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
   // glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, CGBitmapContextGetData(imgCtx));
 
   // XXX WE ARE LEAKING 'surf' HERE.
@@ -208,14 +223,14 @@ CreateTextureThroughIOSurface(NSSize size, CGLContextObj cglContextObj, void (^d
     "uniform sampler2DRect uSampler;\n"
     "void main()\n"
     "{\n"
-    "  gl_FragColor = texture2DRect(uSampler, vPos * vec2(300, 200));\n" // <-- ATTENTION I HARDCODED THE TEXTURE SIZE HERE SORRY ABOUT THAT
+    "  gl_FragColor = texture2DRect(uSampler, vPos * vec2(1920, 1080));\n" // <-- ATTENTION I HARDCODED THE TEXTURE SIZE HERE SORRY ABOUT THAT
     "}\n");
 
   // Create a texture
-  mTexture = CreateTextureThroughIOSurface(NSMakeSize(300, 200), [mContext CGLContextObj], ^(CGContextRef ctx) {
+  mTexture = CreateTextureThroughIOSurface(NSMakeSize(1920, 1080), [mContext CGLContextObj], ^(CGContextRef ctx) {
     // Clear with white.
     CGContextSetRGBFillColor(ctx, 1, 1, 1, 1);
-    CGContextFillRect(ctx, CGRectMake(0, 0, 300, 200));
+    CGContextFillRect(ctx, CGRectMake(0, 0, 1920, 1080));
 
     // Draw a bunch of circles.
     for (int i = 0; i < 30; i++) {
@@ -257,6 +272,9 @@ CreateTextureThroughIOSurface(NSSize size, CGLContextObj cglContextObj, void (^d
 
 - (void)drawRect:(NSRect)aRect
 {
+  // NSLog(@"sleep start");
+  // [NSThread sleepForTimeInterval:10.0f];
+  // NSLog(@"sleep end");
   [mContext setView:self];
   [mContext makeCurrentContext];
 
@@ -315,9 +333,22 @@ void WindowObjCInt::init(void)
     self = [[WindowImplObj alloc] init];
 }
 
-void WindowObjCInt::createWindow(void)
+void WindowObjCInt::createWindow(uint32_t surfaceID)
 {
     NSLog(@"Creating a window inside the client");
+
+    surface = IOSurfaceLookup((IOSurfaceID) surfaceID);
+    GLsizei _texWidth	= IOSurfaceGetWidth(surface);
+    GLsizei _texHeight	= IOSurfaceGetHeight(surface);
+
+    if (surface)
+        NSLog(@"VALID IOSurface");
+    else
+        NSLog(@"INVALID IOSurface");
+
+    std::cout << "width: " << _texWidth << std::endl;
+    std::cout << "height: " << _texHeight << std::endl;
+
     CGWindowListOption listOptions;
     CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID);
     int count = [windowList count];
@@ -348,11 +379,11 @@ void WindowObjCInt::createWindow(void)
                     ];
 
             win.backgroundColor = [NSColor redColor];
-            [win setOpaque:NO];
-            win.alphaValue = 0.5f;
+            [win setOpaque:YES];
+            // win.alphaValue = 0.5f;
             [parentWin addChildWindow:win ordered:NSWindowAbove];
 
-            view = [[TestView alloc] initWithFrame:NSMakeRect(100, 100, 100, 100)];
+            view = [[TestView alloc] initWithFrame:NSMakeRect(0, 0, 1000, 500)];
             [view setWantsLayer:YES];
             view.layer.backgroundColor = [[NSColor yellowColor] CGColor];
 
