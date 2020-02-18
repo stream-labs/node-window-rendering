@@ -24,10 +24,9 @@ using namespace v8;
 
 void createWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    std::cout << "Create Window JS" << std::endl;
     v8::Local<v8::Uint32> binds = v8::Local<v8::Uint32>::Cast(args[0]);
     uint32_t surfaceID = binds->Uint32Value();
-    std::cout << "IOSurfaceID: " << surfaceID  << std::endl;
+    std::cout << "NWR IOSurfaceID: " << surfaceID  << std::endl;
 
     WindowInt *window = new WindowInt();
     window->init();

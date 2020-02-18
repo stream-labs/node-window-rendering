@@ -151,58 +151,52 @@ CreateTexture(NSSize size, void (^drawCallback)(CGContextRef ctx))
   return texture;
 }
 
-static GLuint
-CreateTextureThroughIOSurface(NSSize size, CGLContextObj cglContextObj, void (^drawCallback)(CGContextRef ctx))
+// static GLuint
+// CreateTextureThroughIOSurface(NSSize size, CGLContextObj cglContextObj, void (^drawCallback)(CGContextRef ctx))
+// {
+//   int width = size.width;
+//   int height = size.height;
+
+//   // NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:
+//   //                        [NSNumber numberWithInt:width], kIOSurfaceWidth,
+//   //                        [NSNumber numberWithInt:height], kIOSurfaceHeight,
+//   //                        [NSNumber numberWithInt:4], kIOSurfaceBytesPerElement,
+//   //                        // [NSNumber numberWithBool:YES], kIOSurfaceIsGlobal,
+//   //                        nil];
+
+//   // IOSurfaceRef surf = IOSurfaceCreate((CFDictionaryRef)dict);
+//   // IOSurfaceLock(surf, 0, NULL);
+//   // void* data = IOSurfaceGetBaseAddress(surf);
+//   // size_t stride = IOSurfaceGetBytesPerRow(surf);
+
+//   // CGColorSpaceRef rgb = CGColorSpaceCreateDeviceRGB();
+//   // CGContextRef imgCtx = CGBitmapContextCreate(data, width, height, 8, stride,
+//   //                                             rgb, kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host);
+//   // CGColorSpaceRelease(rgb);
+//   // drawCallback(imgCtx);
+
+//   // IOSurfaceUnlock(surf, 0, NULL);
+
+//   // GLuint texture = 0;
+//   // glActiveTexture(GL_TEXTURE0);
+//   // glGenTextures(1, &texture);
+//   // glBindTexture(GL_TEXTURE_2D, texture);
+
+//   // CGLTexImageIOSurface2D(cglContextObj, GL_TEXTURE_2D, GL_RGBA, width, height, 
+//   //                        GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
+//   // glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, CGBitmapContextGetData(imgCtx));
+
+//   // XXX WE ARE LEAKING 'surf' HERE.
+
+//   return texture;
+// }
+
+- (void) renderFrames
 {
-  // int width = size.width;
-  // int height = size.height;
-
-  // NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:
-  //                        [NSNumber numberWithInt:width], kIOSurfaceWidth,
-  //                        [NSNumber numberWithInt:height], kIOSurfaceHeight,
-  //                        [NSNumber numberWithInt:4], kIOSurfaceBytesPerElement,
-  //                        // [NSNumber numberWithBool:YES], kIOSurfaceIsGlobal,
-  //                        nil];
-
-  // IOSurfaceRef surf = IOSurfaceCreate((CFDictionaryRef)dict);
-  // IOSurfaceLock(surf, 0, NULL);
-  // void* data = IOSurfaceGetBaseAddress(surf);
-  // size_t stride = IOSurfaceGetBytesPerRow(surf);
-
-  // CGColorSpaceRef rgb = CGColorSpaceCreateDeviceRGB();
-  // CGContextRef imgCtx = CGBitmapContextCreate(data, width, height, 8, stride,
-  //                                             rgb, kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host);
-  // CGColorSpaceRelease(rgb);
-  // drawCallback(imgCtx);
-
-  // IOSurfaceUnlock(surf, 0, NULL);
-
-  int width = IOSurfaceGetWidth(surface);
-  int height = IOSurfaceGetHeight(surface);
-  int sizeAlloc = IOSurfaceGetAllocSize(surface);
-  bool inUse = IOSurfaceIsInUse(surface);
-
-  std::cout << "surface width: " << width << std::endl;
-  std::cout << "surface height: " << width << std::endl;
-  std::cout << "surface sizeAlloc: " << sizeAlloc << std::endl;
-  std::cout << "surface inUse: " << inUse << std::endl;
-
-
-  GLuint texture = 0;
-  glActiveTexture(GL_TEXTURE0);
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture);
-
-  // CGLTexImageIOSurface2D(cglContextObj, GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, width, height, 
-  //                        GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surf, 0);
-
-  CGLTexImageIOSurface2D(cglContextObj, GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, width, height, 
-                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
-  // glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, CGBitmapContextGetData(imgCtx));
-
-  // XXX WE ARE LEAKING 'surf' HERE.
-
-  return texture;
+  while (1) {
+    [NSThread sleepForTimeInterval:1.0f];
+    [self drawRect:self.frame];
+  }
 }
 
 - (void)_initGL
@@ -223,25 +217,31 @@ CreateTextureThroughIOSurface(NSSize size, CGLContextObj cglContextObj, void (^d
     "uniform sampler2DRect uSampler;\n"
     "void main()\n"
     "{\n"
-    "  gl_FragColor = texture2DRect(uSampler, vPos * vec2(1920, 1080));\n" // <-- ATTENTION I HARDCODED THE TEXTURE SIZE HERE SORRY ABOUT THAT
+    "  gl_FragColor = texture2DRect(uSampler, vPos * vec2(1532, 490));\n" // <-- ATTENTION I HARDCODED THE TEXTURE SIZE HERE SORRY ABOUT THAT
     "}\n");
 
-  // Create a texture
-  mTexture = CreateTextureThroughIOSurface(NSMakeSize(1920, 1080), [mContext CGLContextObj], ^(CGContextRef ctx) {
-    // Clear with white.
-    CGContextSetRGBFillColor(ctx, 1, 1, 1, 1);
-    CGContextFillRect(ctx, CGRectMake(0, 0, 1920, 1080));
 
-    // Draw a bunch of circles.
-    for (int i = 0; i < 30; i++) {
-      CGFloat radius = 20.0f + 4.0f * i;
-      CGFloat angle = i * 1.1;
-      CGPoint circleCenter = { 150 + radius * cos(angle), 100 + radius * sin(angle) };
-      CGFloat circleRadius = 10;
-      CGContextSetRGBFillColor(ctx, 0, i % 2, 1 - (i % 2), 1); 
-      CGContextFillEllipseInRect(ctx, CGRectMake(circleCenter.x - circleRadius, circleCenter.y - circleRadius, circleRadius * 2, circleRadius * 2));
-    }
-  });
+  // Create a texture
+  // mTexture = CreateTextureThroughIOSurface(NSMakeSize(width, height), [mContext CGLContextObj], ^(CGContextRef ctx) {
+  //   // Clear with white.
+  //   CGContextSetRGBFillColor(ctx, 1, 1, 1, 1);
+  //   CGContextFillRect(ctx, CGRectMake(0, 0, width, height));
+
+  //   // Draw a bunch of circles.
+  //   for (int i = 0; i < 300; i++) {
+  //     CGFloat radius = 20.0f + 4.0f * i;
+  //     CGFloat angle = i * 1.1;
+  //     CGPoint circleCenter = { 150 + radius * cos(angle), 100 + radius * sin(angle) };
+  //     CGFloat circleRadius = 10;
+  //     CGContextSetRGBFillColor(ctx, 0, i % 2, 1 - (i % 2), 1); 
+  //     CGContextFillEllipseInRect(ctx, CGRectMake(circleCenter.x - circleRadius, circleCenter.y - circleRadius, circleRadius * 2, circleRadius * 2));
+  //   }
+  // });
+
+  glActiveTexture(GL_TEXTURE0);
+  glGenTextures(1, &mTexture);
+  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, mTexture);
+
   mTextureUniform = glGetUniformLocation(mProgramID, "uSampler");
 
   // Get a handle for our buffers
@@ -257,6 +257,12 @@ CreateTextureThroughIOSurface(NSSize size, CGLContextObj cglContextObj, void (^d
   glGenBuffers(1, &mVertexbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, mVertexbuffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+
+  NSThread* thread = [ [NSThread alloc] initWithTarget:self
+                          selector:@selector( renderFrames )
+                        object:nil ];
+
+  [ thread start ];
 }
 
 - (void)_cleanupGL
@@ -272,9 +278,19 @@ CreateTextureThroughIOSurface(NSSize size, CGLContextObj cglContextObj, void (^d
 
 - (void)drawRect:(NSRect)aRect
 {
-  // NSLog(@"sleep start");
-  // [NSThread sleepForTimeInterval:10.0f];
-  // NSLog(@"sleep end");
+  NSLog(@"drawRect");
+
+  uint32_t width_surface = 1532;
+  uint32_t height_surface = 490;
+
+  void* data = IOSurfaceGetBaseAddress(surface);
+  char* base = static_cast<char*>(data);
+
+  // std::cout << "base: " << base << std::endl;
+
+  CGLTexImageIOSurface2D([mContext CGLContextObj], GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, width_surface, height_surface, 
+                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
+
   [mContext setView:self];
   [mContext makeCurrentContext];
 
@@ -335,24 +351,16 @@ void WindowObjCInt::init(void)
 
 void WindowObjCInt::createWindow(uint32_t surfaceID)
 {
-    NSLog(@"Creating a window inside the client");
-
     surface = IOSurfaceLookup((IOSurfaceID) surfaceID);
     GLsizei _texWidth	= IOSurfaceGetWidth(surface);
     GLsizei _texHeight	= IOSurfaceGetHeight(surface);
 
-    if (surface)
-        NSLog(@"VALID IOSurface");
-    else
+    if (!surface)
         NSLog(@"INVALID IOSurface");
-
-    std::cout << "width: " << _texWidth << std::endl;
-    std::cout << "height: " << _texHeight << std::endl;
 
     CGWindowListOption listOptions;
     CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID);
     int count = [windowList count];
-    std::cout << "COUNT WINDOWS :" << count << std::endl;
 
     for (CFIndex idx=0; idx<CFArrayGetCount(windowList); idx++) {
         CFDictionaryRef dict = (CFDictionaryRef)CFArrayGetValueAtIndex(windowList, idx);
@@ -362,13 +370,8 @@ void WindowObjCInt::createWindow(uint32_t surfaceID)
 
         NSString* nsWindowName = (NSString*)windowName;
         if (nsWindowName && [nsWindowName isEqualToString:@"Streamlabs OBS"]) {
-            NSLog(@"Window name: %@", nsWindowName);
-            NSLog(@"Window number: %d", windowNumberInt);
-
             NSRect content_rect = NSMakeRect(500, 500, 1000, 500);
             NSWindow* parentWin = [NSApp windowWithWindowNumber:windowNumberInt];
-            if (parentWin)
-                NSLog(@"VALID WINDOW");
 
             NSWindow* win = [
                         [NSWindow alloc]
@@ -380,17 +383,12 @@ void WindowObjCInt::createWindow(uint32_t surfaceID)
 
             win.backgroundColor = [NSColor redColor];
             [win setOpaque:YES];
-            // win.alphaValue = 0.5f;
             [parentWin addChildWindow:win ordered:NSWindowAbove];
 
             view = [[TestView alloc] initWithFrame:NSMakeRect(0, 0, 1000, 500)];
             [view setWantsLayer:YES];
             view.layer.backgroundColor = [[NSColor yellowColor] CGColor];
-
             [win.contentView addSubview:view];
-
-
-            NSLog(@"subviews are %@", [win.contentView subviews]);
         }
     }
 
