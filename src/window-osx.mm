@@ -130,71 +130,10 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   return programID;
 }
 
-static GLuint
-CreateTexture(NSSize size, void (^drawCallback)(CGContextRef ctx))
-{
-  int width = size.width;
-  int height = size.height;
-  CGColorSpaceRef rgb = CGColorSpaceCreateDeviceRGB();
-  CGContextRef imgCtx = CGBitmapContextCreate(NULL, width, height, 8, width * 4,
-                                              rgb, kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host);
-  CGColorSpaceRelease(rgb);
-  drawCallback(imgCtx);
-
-  GLuint texture = 0;
-  glActiveTexture(GL_TEXTURE0);
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture);
-  glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, CGBitmapContextGetData(imgCtx));
-  glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  return texture;
-}
-
-// static GLuint
-// CreateTextureThroughIOSurface(NSSize size, CGLContextObj cglContextObj, void (^drawCallback)(CGContextRef ctx))
-// {
-//   int width = size.width;
-//   int height = size.height;
-
-//   // NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:
-//   //                        [NSNumber numberWithInt:width], kIOSurfaceWidth,
-//   //                        [NSNumber numberWithInt:height], kIOSurfaceHeight,
-//   //                        [NSNumber numberWithInt:4], kIOSurfaceBytesPerElement,
-//   //                        // [NSNumber numberWithBool:YES], kIOSurfaceIsGlobal,
-//   //                        nil];
-
-//   // IOSurfaceRef surf = IOSurfaceCreate((CFDictionaryRef)dict);
-//   // IOSurfaceLock(surf, 0, NULL);
-//   // void* data = IOSurfaceGetBaseAddress(surf);
-//   // size_t stride = IOSurfaceGetBytesPerRow(surf);
-
-//   // CGColorSpaceRef rgb = CGColorSpaceCreateDeviceRGB();
-//   // CGContextRef imgCtx = CGBitmapContextCreate(data, width, height, 8, stride,
-//   //                                             rgb, kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host);
-//   // CGColorSpaceRelease(rgb);
-//   // drawCallback(imgCtx);
-
-//   // IOSurfaceUnlock(surf, 0, NULL);
-
-//   // GLuint texture = 0;
-//   // glActiveTexture(GL_TEXTURE0);
-//   // glGenTextures(1, &texture);
-//   // glBindTexture(GL_TEXTURE_2D, texture);
-
-//   // CGLTexImageIOSurface2D(cglContextObj, GL_TEXTURE_2D, GL_RGBA, width, height, 
-//   //                        GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
-//   // glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, CGBitmapContextGetData(imgCtx));
-
-//   // XXX WE ARE LEAKING 'surf' HERE.
-
-//   return texture;
-// }
-
 - (void) renderFrames
 {
   while (1) {
-    [NSThread sleepForTimeInterval:1.0f];
+    [NSThread sleepForTimeInterval:1/60];
     [self drawRect:self.frame];
   }
 }
@@ -215,28 +154,11 @@ CreateTexture(NSSize size, void (^drawCallback)(CGContextRef ctx))
     "#version 120\n"
     "varying vec2 vPos;\n"
     "uniform sampler2DRect uSampler;\n"
+    "uniform vec2 size;\n"
     "void main()\n"
     "{\n"
-    "  gl_FragColor = texture2DRect(uSampler, vPos * vec2(1532, 490));\n" // <-- ATTENTION I HARDCODED THE TEXTURE SIZE HERE SORRY ABOUT THAT
+    "  gl_FragColor = texture2DRect(uSampler, vPos * size);\n"
     "}\n");
-
-
-  // Create a texture
-  // mTexture = CreateTextureThroughIOSurface(NSMakeSize(width, height), [mContext CGLContextObj], ^(CGContextRef ctx) {
-  //   // Clear with white.
-  //   CGContextSetRGBFillColor(ctx, 1, 1, 1, 1);
-  //   CGContextFillRect(ctx, CGRectMake(0, 0, width, height));
-
-  //   // Draw a bunch of circles.
-  //   for (int i = 0; i < 300; i++) {
-  //     CGFloat radius = 20.0f + 4.0f * i;
-  //     CGFloat angle = i * 1.1;
-  //     CGPoint circleCenter = { 150 + radius * cos(angle), 100 + radius * sin(angle) };
-  //     CGFloat circleRadius = 10;
-  //     CGContextSetRGBFillColor(ctx, 0, i % 2, 1 - (i % 2), 1); 
-  //     CGContextFillEllipseInRect(ctx, CGRectMake(circleCenter.x - circleRadius, circleCenter.y - circleRadius, circleRadius * 2, circleRadius * 2));
-  //   }
-  // });
 
   glActiveTexture(GL_TEXTURE0);
   glGenTextures(1, &mTexture);
@@ -278,17 +200,11 @@ CreateTexture(NSSize size, void (^drawCallback)(CGContextRef ctx))
 
 - (void)drawRect:(NSRect)aRect
 {
-  NSLog(@"drawRect");
-
   uint32_t width_surface = 1532;
   uint32_t height_surface = 490;
 
   void* data = IOSurfaceGetBaseAddress(surface);
-  char* base = static_cast<char*>(data);
-
-  // std::cout << "base: " << base << std::endl;
-
-  CGLTexImageIOSurface2D([mContext CGLContextObj], GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, width_surface, height_surface, 
+  CGLTexImageIOSurface2D([mContext CGLContextObj], GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface), 
                          GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
 
   [mContext setView:self];
@@ -304,26 +220,35 @@ CreateTexture(NSSize size, void (^drawCallback)(CGContextRef ctx))
 
   glUseProgram(mProgramID);
 
+  GLuint loc_size = glGetUniformLocation(mProgramID, "size");
+  glUniform2f(loc_size, (GLfloat)IOSurfaceGetWidth(surface), (GLfloat)IOSurfaceGetHeight(surface));
+
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_RECTANGLE_ARB, mTexture);
-  glUniform1i(mTextureUniform, 0);
 
-  glEnableVertexAttribArray(mPosAttribute);
-  glBindBuffer(GL_ARRAY_BUFFER, mVertexbuffer);
-  glVertexAttribPointer(
-    mPosAttribute, // The attribute we want to configure
-    2,             // size
-    GL_FLOAT,      // type
-    GL_FALSE,      // normalized?
-    0,             // stride
-    (void*)0       // array buffer offset
-  );
+  glBegin(GL_QUADS);
+  glTexCoord2f(0.0, 0.0);
+  glVertex3f(-1.0, -1.0, 0.0);
+  glTexCoord2f(1.0, 0.0);
+  glVertex3f(1.0, -1.0, 0.0);
+  glTexCoord2f(1.0, 1.0);
+  glVertex3f(1.0, 1.0, 0.0);
+  glTexCoord2f(0.0, 1.0);
+  glVertex3f(-1.0, 1.0, 0.0);
+  glEnd();
 
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); // 4 indices starting at 0 -> 2 triangles
-
-  glDisableVertexAttribArray(mPosAttribute);
+	if (surface) {
+		GLint		saveMatrixMode;
+		glDisable(GL_TEXTURE_RECTANGLE_ARB);
+		glGetIntegerv(GL_MATRIX_MODE, &saveMatrixMode);
+		glMatrixMode(GL_TEXTURE);
+		glPopMatrix();
+		glMatrixMode(saveMatrixMode);
+	}
 
   [mContext flushBuffer];
+
+  IOSurfaceDecrementUseCount(surface);
 }
 
 - (BOOL)wantsBestResolutionOpenGLSurface
@@ -355,8 +280,10 @@ void WindowObjCInt::createWindow(uint32_t surfaceID)
     GLsizei _texWidth	= IOSurfaceGetWidth(surface);
     GLsizei _texHeight	= IOSurfaceGetHeight(surface);
 
-    if (!surface)
+    if (!surface) {
         NSLog(@"INVALID IOSurface");
+        return;
+    }
 
     CGWindowListOption listOptions;
     CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID);
@@ -370,7 +297,7 @@ void WindowObjCInt::createWindow(uint32_t surfaceID)
 
         NSString* nsWindowName = (NSString*)windowName;
         if (nsWindowName && [nsWindowName isEqualToString:@"Streamlabs OBS"]) {
-            NSRect content_rect = NSMakeRect(500, 500, 1000, 500);
+            NSRect content_rect = NSMakeRect(0, 500, 1532, 490);
             NSWindow* parentWin = [NSApp windowWithWindowNumber:windowNumberInt];
 
             NSWindow* win = [
@@ -385,7 +312,7 @@ void WindowObjCInt::createWindow(uint32_t surfaceID)
             [win setOpaque:YES];
             [parentWin addChildWindow:win ordered:NSWindowAbove];
 
-            view = [[TestView alloc] initWithFrame:NSMakeRect(0, 0, 1000, 500)];
+            view = [[TestView alloc] initWithFrame:NSMakeRect(0, 0, 1532, 490)];
             [view setWantsLayer:YES];
             view.layer.backgroundColor = [[NSColor yellowColor] CGColor];
             [win.contentView addSubview:view];
