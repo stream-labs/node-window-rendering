@@ -17,18 +17,25 @@
 ******************************************************************************/
 
 #include <node.h>
+#include <nan.h>
+
 #include "window-osx-int.hpp"
 #include <iostream>
 
+using namespace Nan;
 using namespace v8;
+using namespace std;
 
 WindowInt *window;
 
 void createWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
+    v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>(); 
+	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
+
     window = new WindowInt();
     window->init();
-    window->createWindow();
+    window->createWindow(handle);
 }
 
 void destroyWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -57,7 +64,7 @@ void moveWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
     window->moveWindow(cx->Uint32Value(), cy->Uint32Value());
 }
 
-void init(Local<Object> exports) {
+void init(v8::Local<v8::Object> exports) {
     /// Functions ///
     NODE_SET_METHOD(exports, "createWindow", createWindowJS);
     NODE_SET_METHOD(exports, "destroyWindow", destroyWindowJS);

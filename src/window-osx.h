@@ -27,11 +27,32 @@
 #include "window-osx-obj-c-int.h"
 #include "window-osx-int.hpp"
 
+#include <map>
+#include <iostream>
+#include <thread>
+
 @interface WindowImplObj : NSObject
 @end
 
-@interface MyOpenGLView : NSOpenGLView
+@interface OpenGLView: NSView
+
+@property (atomic, strong) NSOpenGLContext* mContext;
+@property (atomic) GLuint mProgramID;
+@property (atomic) GLuint mTexture;
+@property (atomic) GLuint mTextureUniform;
+@property (atomic) GLuint mPosAttribute;
+@property (atomic) GLuint mVertexbuffer;
+
 @end
 
-GLuint quadVAOId, quadVBOId;
-BOOL quadInit;
+struct WindowInfo {
+    // IOSurfaceRef surface = NULL;
+    // bool stop = false;
+    // std::thread* thread;
+};
+OpenGLView *view;
+IOSurfaceRef surface = NULL;
+bool stop = false;
+std::thread* thread;
+
+std::map<unsigned char*, WindowInfo*> windows;

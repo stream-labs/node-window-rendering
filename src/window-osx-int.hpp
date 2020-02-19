@@ -30,7 +30,7 @@ public:
     ~WindowInt(void);
 
     void init(void);
-    void createWindow(void);
+    void createWindow(unsigned char* handle);
     void destroyWindow(void);
     void connectIOSurfaceJS(uint32_t surfaceID);
     void destroyIOSurface(void);

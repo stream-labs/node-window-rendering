@@ -18,27 +18,6 @@
 
 #include "window-osx.h"
 
-#include <iostream>
-#include <thread>
-
-IOSurfaceRef surface = NULL;
-bool stop = false;
-std::thread* thread;
-
-@interface TestView: NSView
-{
-  NSOpenGLContext* mContext;
-  GLuint mProgramID;
-  GLuint mTexture;
-  GLuint mTextureUniform;
-  GLuint mPosAttribute;
-  GLuint mVertexbuffer;
-}
-
-@end
-
-TestView *view;
-
 void renderFrames()
 {
   while (!stop) {
@@ -51,7 +30,7 @@ void renderFrames()
   }
 }
 
-@implementation TestView
+@implementation OpenGLView
 
 - (id)initWithFrame:(NSRect)aFrame
 {
@@ -63,12 +42,12 @@ void renderFrames()
         fmtAttribute
     };
     NSOpenGLPixelFormat* pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
-    mContext = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
+    self.mContext = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
     GLint swapInt = 1;
-    [mContext setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+    [self.mContext setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
     GLint opaque = 1;
-    [mContext setValues:&opaque forParameter:NSOpenGLCPSurfaceOpacity];
-    [mContext makeCurrentContext];
+    [self.mContext setValues:&opaque forParameter:NSOpenGLCPSurfaceOpacity];
+    [self.mContext makeCurrentContext];
     [self _initGL];
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(_surfaceNeedsUpdate:)
@@ -81,7 +60,7 @@ void renderFrames()
 - (void)dealloc
 {
   [self _cleanupGL];
-  [mContext release];
+  [self.mContext release];
   [super dealloc];
 }
 
@@ -148,7 +127,7 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
 - (void)_initGL
 {  
   // Create and compile our GLSL program from the shaders.
-  mProgramID = CompileShaders(
+  self.mProgramID = CompileShaders(
     "#version 120\n"
     "// Input vertex data, different for all executions of this shader.\n"
     "attribute vec2 aPos;\n"
@@ -167,14 +146,17 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
     "  gl_FragColor = texture2DRect(uSampler, vPos * size);\n"
     "}\n");
 
-  glActiveTexture(GL_TEXTURE0);
-  glGenTextures(1, &mTexture);
-  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, mTexture);
+  GLuint texture = self.mTexture;
+  GLuint vertexBuffer = self.mVertexbuffer;
 
-  mTextureUniform = glGetUniformLocation(mProgramID, "uSampler");
+  glActiveTexture(GL_TEXTURE0);
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture);
+
+  self.mTextureUniform = glGetUniformLocation(self.mProgramID, "uSampler");
 
   // Get a handle for our buffers
-  mPosAttribute = glGetAttribLocation(mProgramID, "aPos");
+  self.mPosAttribute = glGetAttribLocation(self.mProgramID, "aPos");
 
   static const GLfloat g_vertex_buffer_data[] = { 
      0.0f,  0.0f,
@@ -183,20 +165,23 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
      1.0f,  1.0f,
   };
 
-  glGenBuffers(1, &mVertexbuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, mVertexbuffer);
+  glGenBuffers(1, &vertexBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 }
 
 - (void)_cleanupGL
 {
-  glDeleteTextures(1, &mTexture);
-  glDeleteBuffers(1, &mVertexbuffer);
+  GLuint texture = self.mTexture;
+  GLuint vertexBuffer = self.mVertexbuffer;
+
+  glDeleteTextures(1, &texture);
+  glDeleteBuffers(1, &vertexBuffer);
 }
 
 - (void)_surfaceNeedsUpdate:(NSNotification*)notification
 {
-  [mContext update];
+  [self.mContext update];
 }
 
 - (void)drawRect:(NSRect)aRect
@@ -204,11 +189,11 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   if (!surface)
     return;
 
-  CGLTexImageIOSurface2D([mContext CGLContextObj], GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface),
+  CGLTexImageIOSurface2D([self.mContext CGLContextObj], GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface),
                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
 
-  [mContext setView:self];
-  [mContext makeCurrentContext];
+  [self.mContext setView:self];
+  [self.mContext makeCurrentContext];
 
   NSSize backingSize = [self convertSizeToBacking:[self bounds].size];
   GLdouble width = backingSize.width;
@@ -218,13 +203,13 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   glClearColor(0.0, 1.0, 0.0, 1.0);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  glUseProgram(mProgramID);
+  glUseProgram(self.mProgramID);
 
-  GLuint loc_size = glGetUniformLocation(mProgramID, "size");
+  GLuint loc_size = glGetUniformLocation(self.mProgramID, "size");
   glUniform2f(loc_size, (GLfloat)IOSurfaceGetWidth(surface), (GLfloat)IOSurfaceGetHeight(surface));
 
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, mTexture);
+  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.mTexture);
 
   glBegin(GL_QUADS);
   glTexCoord2f(0.0, 0.0);
@@ -245,7 +230,7 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   glPopMatrix();
   glMatrixMode(saveMatrixMode);
 
-  [mContext flushBuffer];
+  [self.mContext flushBuffer];
 
   IOSurfaceDecrementUseCount(surface);
 }
@@ -284,7 +269,7 @@ void WindowObjCInt::init(void)
     self = [[WindowImplObj alloc] init];
 }
 
-void WindowObjCInt::createWindow()
+void WindowObjCInt::createWindow(unsigned char* handle)
 {
     CGWindowListOption listOptions;
     CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID);
@@ -299,8 +284,17 @@ void WindowObjCInt::createWindow()
         NSString* nsWindowName = (NSString*)windowName;
         if (nsWindowName && [nsWindowName isEqualToString:@"Streamlabs OBS"]) {
             NSWindow* parentWin = [NSApp windowWithWindowNumber:windowNumberInt];
-            view = [[TestView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+            view = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
             [parentWin.contentView addSubview:view];
+
+
+            NSView *viewParent = *reinterpret_cast<NSView**>(handle);
+	          NSWindow *winParent = [viewParent window];
+
+            if (winParent == parentWin)
+              NSLog(@"CORRECT WINDOW");
+            else
+              NSLog(@"INCORRECT WINDOW");
         }
     }
 

@@ -4,5 +4,8 @@
   "main": "main.js",
   "repository": "git@github.com:stream-labs/node-window-rendering.git",
   "author": "Eddy Gharbi <eddygharbiema@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "nan": "^2.14.0"
+  }
 }
