@@ -21,7 +21,7 @@
 #include <iostream>
 #include <thread>
 
-IOSurfaceRef surface;
+IOSurfaceRef surface = NULL;
 bool stop = false;
 std::thread* thread;
 
@@ -186,9 +186,6 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   glGenBuffers(1, &mVertexbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, mVertexbuffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
-
-  stop = false;
-  thread = new std::thread(renderFrames);
 }
 
 - (void)_cleanupGL
@@ -204,7 +201,9 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
 
 - (void)drawRect:(NSRect)aRect
 {
-  void* data = IOSurfaceGetBaseAddress(surface);
+  if (!surface)
+    return;
+
   CGLTexImageIOSurface2D([mContext CGLContextObj], GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface),
                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
 
@@ -238,14 +237,13 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   glVertex3f(-1.0, 1.0, 0.0);
   glEnd();
 
-  if (surface) {
-    GLint		saveMatrixMode;
-    glDisable(GL_TEXTURE_RECTANGLE_ARB);
-    glGetIntegerv(GL_MATRIX_MODE, &saveMatrixMode);
-    glMatrixMode(GL_TEXTURE);
-    glPopMatrix();
-    glMatrixMode(saveMatrixMode);
-  }
+
+  GLint		saveMatrixMode;
+  glDisable(GL_TEXTURE_RECTANGLE_ARB);
+  glGetIntegerv(GL_MATRIX_MODE, &saveMatrixMode);
+  glMatrixMode(GL_TEXTURE);
+  glPopMatrix();
+  glMatrixMode(saveMatrixMode);
 
   [mContext flushBuffer];
 
@@ -286,17 +284,8 @@ void WindowObjCInt::init(void)
     self = [[WindowImplObj alloc] init];
 }
 
-void WindowObjCInt::createWindow(uint32_t surfaceID)
+void WindowObjCInt::createWindow()
 {
-    surface = IOSurfaceLookup((IOSurfaceID) surfaceID);
-    GLsizei _texWidth	= IOSurfaceGetWidth(surface);
-    GLsizei _texHeight	= IOSurfaceGetHeight(surface);
-
-    if (!surface) {
-        NSLog(@"INVALID IOSurface");
-        return;
-    }
-
     CGWindowListOption listOptions;
     CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID);
     int count = [windowList count];
@@ -310,7 +299,7 @@ void WindowObjCInt::createWindow(uint32_t surfaceID)
         NSString* nsWindowName = (NSString*)windowName;
         if (nsWindowName && [nsWindowName isEqualToString:@"Streamlabs OBS"]) {
             NSWindow* parentWin = [NSApp windowWithWindowNumber:windowNumberInt];
-            view = [[TestView alloc] initWithFrame:NSMakeRect(0, 300, 1532, 490)];
+            view = [[TestView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
             [parentWin.contentView addSubview:view];
         }
     }
@@ -323,6 +312,24 @@ void WindowObjCInt::destroyWindow(void)
   stop = true;
   [view removeFromSuperview];
   CFRelease(view);
+}
+
+void WindowObjCInt::connectIOSurfaceJS(uint32_t surfaceID)
+{
+  surface = IOSurfaceLookup((IOSurfaceID) surfaceID);
+
+  [view setFrameSize:NSMakeSize(IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface))];
+
+  stop = false;
+  thread = new std::thread(renderFrames);
+}
+
+void WindowObjCInt::destroyIOSurface(void)
+{
+  if (surface) {
+    CFRelease(surface);
+    surface = NULL;
+  }
 }
 
 void WindowObjCInt::moveWindow(uint32_t cx, uint32_t cy)

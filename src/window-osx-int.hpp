@@ -30,8 +30,10 @@ public:
     ~WindowInt(void);
 
     void init(void);
-    void createWindow(uint32_t surfaceID);
+    void createWindow(void);
     void destroyWindow(void);
+    void connectIOSurfaceJS(uint32_t surfaceID);
+    void destroyIOSurface(void);
     void moveWindow(uint32_t cx, uint32_t cy);
 
 private:

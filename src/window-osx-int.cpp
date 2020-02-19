@@ -33,14 +33,24 @@ WindowInt::~WindowInt(void)
     if (_impl) { delete _impl; _impl = nullptr; }
 }
 
-void WindowInt::createWindow(uint32_t surfaceID)
+void WindowInt::createWindow(void)
 {
-    _impl->createWindow(surfaceID);
+    _impl->createWindow();
 }
 
 void WindowInt::destroyWindow(void)
 {
     _impl->destroyWindow();
+}
+
+void WindowInt::connectIOSurfaceJS(uint32_t surfaceID)
+{
+    _impl->connectIOSurfaceJS(surfaceID);
+}
+
+void WindowInt::destroyIOSurface(void)
+{
+    _impl->destroyIOSurface();
 }
 
 void WindowInt::moveWindow(uint32_t cx, uint32_t cy)

@@ -26,19 +26,27 @@ WindowInt *window;
 
 void createWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    v8::Local<v8::Uint32> binds = v8::Local<v8::Uint32>::Cast(args[0]);
-    uint32_t surfaceID = binds->Uint32Value();
-    std::cout << "NWR IOSurfaceID: " << surfaceID  << std::endl;
-
     window = new WindowInt();
     window->init();
-    window->createWindow(surfaceID);
+    window->createWindow();
 }
 
 void destroyWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
     window->destroyWindow();
     delete window;
+}
+
+void connectIOSurfaceJS(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+    v8::Local<v8::Uint32> surfaceID = v8::Local<v8::Uint32>::Cast(args[0]);
+
+    window->connectIOSurfaceJS(surfaceID->Uint32Value());
+}
+
+void destroyIOSurfaceJS(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+    window->destroyIOSurface();
 }
 
 void moveWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -53,6 +61,8 @@ void init(Local<Object> exports) {
     /// Functions ///
     NODE_SET_METHOD(exports, "createWindow", createWindowJS);
     NODE_SET_METHOD(exports, "destroyWindow", destroyWindowJS);
+    NODE_SET_METHOD(exports, "connectIOSurface", connectIOSurfaceJS);
+    NODE_SET_METHOD(exports, "destroyIOSurface", destroyIOSurfaceJS);
     NODE_SET_METHOD(exports, "moveWindow", moveWindowJS);
 }
 
