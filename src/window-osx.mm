@@ -256,6 +256,17 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   return YES;
 }
 
+- (NSView *)hitTest:(NSPoint)aPoint
+{
+    // pass-through events that don't hit one of the visible subviews
+    for (NSView *subView in [self subviews]) {
+        if (![subView isHidden] && [subView hitTest:aPoint])
+            return subView;
+    }
+
+    return nil;
+}
+
 @end
 
 @implementation WindowImplObj
@@ -297,25 +308,10 @@ void WindowObjCInt::createWindow(uint32_t surfaceID)
 
         NSString* nsWindowName = (NSString*)windowName;
         if (nsWindowName && [nsWindowName isEqualToString:@"Streamlabs OBS"]) {
-            NSRect content_rect = NSMakeRect(0, 500, 1532, 490);
             NSWindow* parentWin = [NSApp windowWithWindowNumber:windowNumberInt];
-
-            NSWindow* win = [
-                        [NSWindow alloc]
-                        initWithContentRect:content_rect
-                        styleMask:NSBorderlessWindowMask // movable
-                        backing:NSBackingStoreBuffered
-                        defer:NO
-                    ];
-
-            win.backgroundColor = [NSColor redColor];
-            [win setOpaque:YES];
-            [parentWin addChildWindow:win ordered:NSWindowAbove];
-
-            view = [[TestView alloc] initWithFrame:NSMakeRect(0, 0, 1532, 490)];
-            [view setWantsLayer:YES];
-            view.layer.backgroundColor = [[NSColor yellowColor] CGColor];
-            [win.contentView addSubview:view];
+            view = [[TestView alloc] initWithFrame:NSMakeRect(0, 300, 1532, 490)];
+            [parentWin.contentView addSubview:view];
+            [view setFrameOrigin:NSMakePoint(50, 460)];
         }
     }
 
