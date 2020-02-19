@@ -22,20 +22,38 @@
 
 using namespace v8;
 
+WindowInt *window;
+
 void createWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
     v8::Local<v8::Uint32> binds = v8::Local<v8::Uint32>::Cast(args[0]);
     uint32_t surfaceID = binds->Uint32Value();
     std::cout << "NWR IOSurfaceID: " << surfaceID  << std::endl;
 
-    WindowInt *window = new WindowInt();
+    window = new WindowInt();
     window->init();
     window->createWindow(surfaceID);
+}
+
+void destroyWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+    window->destroyWindow();
+    delete window;
+}
+
+void moveWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+    v8::Local<v8::Uint32> cx = v8::Local<v8::Uint32>::Cast(args[0]);
+    v8::Local<v8::Uint32> cy = v8::Local<v8::Uint32>::Cast(args[1]);
+
+    window->moveWindow(cx->Uint32Value(), cy->Uint32Value());
 }
 
 void init(Local<Object> exports) {
     /// Functions ///
     NODE_SET_METHOD(exports, "createWindow", createWindowJS);
+    NODE_SET_METHOD(exports, "destroyWindow", destroyWindowJS);
+    NODE_SET_METHOD(exports, "moveWindow", moveWindowJS);
 }
 
 NODE_MODULE(uiohookModule, init)

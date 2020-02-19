@@ -37,3 +37,13 @@ void WindowInt::createWindow(uint32_t surfaceID)
 {
     _impl->createWindow(surfaceID);
 }
+
+void WindowInt::destroyWindow(void)
+{
+    _impl->destroyWindow();
+}
+
+void WindowInt::moveWindow(uint32_t cx, uint32_t cy)
+{
+    _impl->moveWindow(cx, cy);
+}

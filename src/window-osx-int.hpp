@@ -31,6 +31,8 @@ public:
 
     void init(void);
     void createWindow(uint32_t surfaceID);
+    void destroyWindow(void);
+    void moveWindow(uint32_t cx, uint32_t cy);
 
 private:
     WindowObjCInt * _impl;

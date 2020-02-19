@@ -19,8 +19,11 @@
 #include "window-osx.h"
 
 #include <iostream>
+#include <thread>
 
 IOSurfaceRef surface;
+bool stop = false;
+std::thread* thread;
 
 @interface TestView: NSView
 {
@@ -35,6 +38,18 @@ IOSurfaceRef surface;
 @end
 
 TestView *view;
+
+void renderFrames()
+{
+  while (!stop) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(16));
+    dispatch_sync(dispatch_get_main_queue(), ^{
+      if (!stop) {
+        view.needsDisplay = YES;
+      }
+    });
+  }
+}
 
 @implementation TestView
 
@@ -130,14 +145,6 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   return programID;
 }
 
-- (void) renderFrames
-{
-  while (1) {
-    [NSThread sleepForTimeInterval:1/60];
-    [self drawRect:self.frame];
-  }
-}
-
 - (void)_initGL
 {  
   // Create and compile our GLSL program from the shaders.
@@ -180,11 +187,8 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   glBindBuffer(GL_ARRAY_BUFFER, mVertexbuffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
-  NSThread* thread = [ [NSThread alloc] initWithTarget:self
-                          selector:@selector( renderFrames )
-                        object:nil ];
-
-  [ thread start ];
+  stop = false;
+  thread = new std::thread(renderFrames);
 }
 
 - (void)_cleanupGL
@@ -200,12 +204,9 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
 
 - (void)drawRect:(NSRect)aRect
 {
-  uint32_t width_surface = 1532;
-  uint32_t height_surface = 490;
-
   void* data = IOSurfaceGetBaseAddress(surface);
-  CGLTexImageIOSurface2D([mContext CGLContextObj], GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface), 
-                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
+  CGLTexImageIOSurface2D([mContext CGLContextObj], GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface),
+                        GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
 
   [mContext setView:self];
   [mContext makeCurrentContext];
@@ -237,14 +238,14 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   glVertex3f(-1.0, 1.0, 0.0);
   glEnd();
 
-	if (surface) {
-		GLint		saveMatrixMode;
-		glDisable(GL_TEXTURE_RECTANGLE_ARB);
-		glGetIntegerv(GL_MATRIX_MODE, &saveMatrixMode);
-		glMatrixMode(GL_TEXTURE);
-		glPopMatrix();
-		glMatrixMode(saveMatrixMode);
-	}
+  if (surface) {
+    GLint		saveMatrixMode;
+    glDisable(GL_TEXTURE_RECTANGLE_ARB);
+    glGetIntegerv(GL_MATRIX_MODE, &saveMatrixMode);
+    glMatrixMode(GL_TEXTURE);
+    glPopMatrix();
+    glMatrixMode(saveMatrixMode);
+  }
 
   [mContext flushBuffer];
 
@@ -311,11 +312,23 @@ void WindowObjCInt::createWindow(uint32_t surfaceID)
             NSWindow* parentWin = [NSApp windowWithWindowNumber:windowNumberInt];
             view = [[TestView alloc] initWithFrame:NSMakeRect(0, 300, 1532, 490)];
             [parentWin.contentView addSubview:view];
-            [view setFrameOrigin:NSMakePoint(50, 460)];
         }
     }
 
     CFRelease(windowList);
+}
+
+void WindowObjCInt::destroyWindow(void)
+{
+  stop = true;
+  [view removeFromSuperview];
+  CFRelease(view);
+}
+
+void WindowObjCInt::moveWindow(uint32_t cx, uint32_t cy)
+{
+  std::cout << "NWR: coordinates: " << cx << ":" << cy << std::endl;
+  [view setFrameOrigin:NSMakePoint(cx, cy)];
 }
 
 @end
