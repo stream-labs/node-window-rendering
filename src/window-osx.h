@@ -34,25 +34,21 @@
 @interface WindowImplObj : NSObject
 @end
 
-@interface OpenGLView: NSView
-
-@property (atomic, strong) NSOpenGLContext* mContext;
-@property (atomic) GLuint mProgramID;
-@property (atomic) GLuint mTexture;
-@property (atomic) GLuint mTextureUniform;
-@property (atomic) GLuint mPosAttribute;
-@property (atomic) GLuint mVertexbuffer;
-
-@end
 
 struct WindowInfo {
-    // IOSurfaceRef surface = NULL;
-    // bool stop = false;
-    // std::thread* thread;
+    NSOpenGLContext* mContext;
+    GLuint mProgramID;
+    GLuint mTexture;
+    GLuint mTextureUniform;
+    GLuint mPosAttribute;
+    GLuint mVertexbuffer;
 };
+
+@interface OpenGLView: NSView
+@property (atomic) WindowInfo* wi;
+@end
+
 OpenGLView *view;
 IOSurfaceRef surface = NULL;
 bool stop = false;
 std::thread* thread;
-
-std::map<unsigned char*, WindowInfo*> windows;

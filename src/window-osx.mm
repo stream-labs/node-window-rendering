@@ -30,29 +30,90 @@ void renderFrames()
   }
 }
 
-@implementation OpenGLView
+static const char *gl_error_to_str(GLenum errorcode)
+{
+	static const struct {
+		GLenum error;
+		const char *str;
+	} err_to_str[] = {
+		{
+			GL_INVALID_ENUM,
+			"GL_INVALID_ENUM",
+		},
+		{
+			GL_INVALID_VALUE,
+			"GL_INVALID_VALUE",
+		},
+		{
+			GL_INVALID_OPERATION,
+			"GL_INVALID_OPERATION",
+		},
+		{
+			GL_INVALID_FRAMEBUFFER_OPERATION,
+			"GL_INVALID_FRAMEBUFFER_OPERATION",
+		},
+		{
+			GL_OUT_OF_MEMORY,
+			"GL_OUT_OF_MEMORY",
+		},
+		{
+			GL_STACK_UNDERFLOW,
+			"GL_STACK_UNDERFLOW",
+		},
+		{
+			GL_STACK_OVERFLOW,
+			"GL_STACK_OVERFLOW",
+		},
+	};
+	for (size_t i = 0; i < sizeof(err_to_str) / sizeof(*err_to_str); i++) {
+		if (err_to_str[i].error == errorcode)
+			return err_to_str[i].str;
+	}
+	return "Unknown";
+}
 
+static inline bool gl_success(const char *funcname)
+{
+	GLenum errorcode = glGetError();
+	if (errorcode != GL_NO_ERROR) {
+		int attempts = 8;
+		do {
+      std::cout << funcname << " failed, glGetError returned " << gl_error_to_str(errorcode) << ", " << errorcode << std::endl;
+			errorcode = glGetError();
+
+			--attempts;
+			if (attempts == 0) {
+        std::cout << "Too many GL errors, moving on" << std::endl;
+				break;
+			}
+		} while (errorcode != GL_NO_ERROR);
+		return false;
+	}
+
+	return true;
+}
+
+@implementation OpenGLView
 - (id)initWithFrame:(NSRect)aFrame
 {
   if (self = [super initWithFrame:aFrame]) {
-    NSOpenGLPixelFormatAttribute fmtAttribute;
-    NSOpenGLPixelFormatAttribute attribs[] = {
-        NSOpenGLPFAAccelerated,
+    NSOpenGLPixelFormatAttribute glAttributes[] =
+    {
+        NSOpenGLPFAColorSize, 24,
+        NSOpenGLPFAAlphaSize, 8,
         NSOpenGLPFADoubleBuffer,
-        fmtAttribute
+        NSOpenGLPFAAccelerated,
+        0
     };
-    NSOpenGLPixelFormat* pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
-    self.mContext = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
+    self.wi = new WindowInfo();
+    self.wi->mContext = [[NSOpenGLContext alloc] initWithFormat:[[NSOpenGLPixelFormat alloc] initWithAttributes:glAttributes]
+                                                shareContext:nil];
     GLint swapInt = 1;
-    [self.mContext setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+    [self.wi->mContext setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
     GLint opaque = 1;
-    [self.mContext setValues:&opaque forParameter:NSOpenGLCPSurfaceOpacity];
-    [self.mContext makeCurrentContext];
+    [self.wi->mContext setValues:&opaque forParameter:NSOpenGLCPSurfaceOpacity];
+    [self.wi->mContext makeCurrentContext];
     [self _initGL];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(_surfaceNeedsUpdate:)
-                                                 name:NSViewGlobalFrameDidChangeNotification
-                                               object:self];
   }
   return self;
 }
@@ -60,7 +121,8 @@ void renderFrames()
 - (void)dealloc
 {
   [self _cleanupGL];
-  [self.mContext release];
+  [NSOpenGLContext clearCurrentContext];
+  [self.wi->mContext release];
   [super dealloc];
 }
 
@@ -69,18 +131,24 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
 {
   // Create the shaders
   GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+  gl_success("glCreateShader");
   GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+  gl_success("glCreateShader");
 
   GLint result = GL_FALSE;
   int infoLogLength;
 
   // Compile Vertex Shader
   glShaderSource(vertexShaderID, 1, &vertexShader , NULL);
+  gl_success("glShaderSource");
   glCompileShader(vertexShaderID);
+  gl_success("glCompileShader");
 
   // Check Vertex Shader
   glGetShaderiv(vertexShaderID, GL_COMPILE_STATUS, &result);
+  gl_success("glGetShaderiv");
   glGetShaderiv(vertexShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
+  gl_success("glGetShaderiv");
   if (infoLogLength > 0) {
     char* vertexShaderErrorMessage = new char[infoLogLength+1];
     glGetShaderInfoLog(vertexShaderID, infoLogLength, NULL, vertexShaderErrorMessage);
@@ -90,12 +158,17 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
 
   // Compile Fragment Shader
   glShaderSource(fragmentShaderID, 1, &fragmentShader , NULL);
+  gl_success("glShaderSource");
   glCompileShader(fragmentShaderID);
+  gl_success("glCompileShader");
 
   // Check Fragment Shader
   glGetShaderiv(fragmentShaderID, GL_COMPILE_STATUS, &result);
+  gl_success("glGetShaderiv");
   glGetShaderiv(fragmentShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
+  gl_success("glGetShaderiv");
   if (infoLogLength > 0) {
+    std::cout << "Error glGetProgramiv fragmentShaderID" << std::endl;
     char* fragmentShaderErrorMessage = new char[infoLogLength+1];
     glGetShaderInfoLog(fragmentShaderID, infoLogLength, NULL, fragmentShaderErrorMessage);
     printf("%s\n", fragmentShaderErrorMessage);
@@ -104,14 +177,21 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
 
   // Link the program
   GLuint programID = glCreateProgram();
+  gl_success("glCreateProgram");
   glAttachShader(programID, vertexShaderID);
+  gl_success("glAttachShader");
   glAttachShader(programID, fragmentShaderID);
+  gl_success("glAttachShader");
   glLinkProgram(programID);
+  gl_success("glLinkProgram");
 
   // Check the program
   glGetProgramiv(programID, GL_LINK_STATUS, &result);
+  gl_success("glGetProgramiv");
   glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &infoLogLength);
+  gl_success("glGetProgramiv");
   if (infoLogLength > 0) {
+    std::cout << "Error glGetProgramiv programID" << std::endl;
     char* programErrorMessage = new char[infoLogLength+1];
     glGetProgramInfoLog(programID, infoLogLength, NULL, programErrorMessage);
     printf("%s\n", programErrorMessage);
@@ -119,15 +199,17 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   }
 
   glDeleteShader(vertexShaderID);
+  gl_success("glDeleteShader");
   glDeleteShader(fragmentShaderID);
+  gl_success("glDeleteShader");
 
   return programID;
 }
 
 - (void)_initGL
-{  
+{
   // Create and compile our GLSL program from the shaders.
-  self.mProgramID = CompileShaders(
+  self.wi->mProgramID = CompileShaders(
     "#version 120\n"
     "// Input vertex data, different for all executions of this shader.\n"
     "attribute vec2 aPos;\n"
@@ -145,18 +227,20 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
     "{\n"
     "  gl_FragColor = texture2DRect(uSampler, vPos * size);\n"
     "}\n");
-
-  GLuint texture = self.mTexture;
-  GLuint vertexBuffer = self.mVertexbuffer;
-
+  
   glActiveTexture(GL_TEXTURE0);
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture);
+  gl_success("glActiveTexture");
+  glGenTextures(1, &self.wi->mTexture);
+  gl_success("glGenTextures");
+  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.wi->mTexture);
+  gl_success("glBindTexture");
 
-  self.mTextureUniform = glGetUniformLocation(self.mProgramID, "uSampler");
+  self.wi->mTextureUniform = glGetUniformLocation(self.wi->mProgramID, "uSampler");
+  gl_success("glGetUniformLocation");
 
   // Get a handle for our buffers
-  self.mPosAttribute = glGetAttribLocation(self.mProgramID, "aPos");
+  self.wi->mPosAttribute = glGetAttribLocation(self.wi->mProgramID, "aPos");
+  gl_success("glGetAttribLocation");
 
   static const GLfloat g_vertex_buffer_data[] = { 
      0.0f,  0.0f,
@@ -165,23 +249,24 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
      1.0f,  1.0f,
   };
 
-  glGenBuffers(1, &vertexBuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+  glGenBuffers(1, &self.wi->mVertexbuffer);
+  gl_success("glGenBuffers");
+  glBindBuffer(GL_ARRAY_BUFFER, self.wi->mVertexbuffer);
+  gl_success("glBindBuffer");
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+  gl_success("glBufferData");
 }
 
 - (void)_cleanupGL
 {
-  GLuint texture = self.mTexture;
-  GLuint vertexBuffer = self.mVertexbuffer;
-
-  glDeleteTextures(1, &texture);
-  glDeleteBuffers(1, &vertexBuffer);
+  glDeleteTextures(1, &self.wi->mTexture);
+  glDeleteBuffers(1, &self.wi->mVertexbuffer);
+  glDeleteProgram(self.wi->mProgramID);
 }
 
 - (void)_surfaceNeedsUpdate:(NSNotification*)notification
 {
-  [self.mContext update];
+  [self.wi->mContext update];
 }
 
 - (void)drawRect:(NSRect)aRect
@@ -189,50 +274,62 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   if (!surface)
     return;
 
-  CGLTexImageIOSurface2D([self.mContext CGLContextObj], GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface),
+  CGLTexImageIOSurface2D([self.wi->mContext CGLContextObj], GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface),
                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
+  gl_success("CGLTexImageIOSurface2D");
 
-  [self.mContext setView:self];
-  [self.mContext makeCurrentContext];
+  [self.wi->mContext setView:self];
+  [self.wi->mContext makeCurrentContext];
 
   NSSize backingSize = [self convertSizeToBacking:[self bounds].size];
   GLdouble width = backingSize.width;
   GLdouble height = backingSize.height;
   glViewport(0, 0, width, height);
 
+  gl_success("glViewport");
+
   glClearColor(0.0, 1.0, 0.0, 1.0);
+  gl_success("glClearColor");
   glClear(GL_COLOR_BUFFER_BIT);
+  gl_success("glClear");
 
-  glUseProgram(self.mProgramID);
+  glUseProgram(self.wi->mProgramID);
+  gl_success("glUseProgram");
 
-  GLuint loc_size = glGetUniformLocation(self.mProgramID, "size");
+  GLuint loc_size = glGetUniformLocation(self.wi->mProgramID, "size");
+  gl_success("glGetUniformLocation");
   glUniform2f(loc_size, (GLfloat)IOSurfaceGetWidth(surface), (GLfloat)IOSurfaceGetHeight(surface));
+  gl_success("glUniform2f");
 
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.mTexture);
+  gl_success("glActiveTexture");
+  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.wi->mTexture);
+  gl_success("glBindTexture");
 
-  glBegin(GL_QUADS);
-  glTexCoord2f(0.0, 0.0);
-  glVertex3f(-1.0, -1.0, 0.0);
-  glTexCoord2f(1.0, 0.0);
-  glVertex3f(1.0, -1.0, 0.0);
-  glTexCoord2f(1.0, 1.0);
-  glVertex3f(1.0, 1.0, 0.0);
-  glTexCoord2f(0.0, 1.0);
-  glVertex3f(-1.0, 1.0, 0.0);
-  glEnd();
+  glUniform1i(self.wi->mTextureUniform, 0);
+  gl_success("glUniform1i");
 
+  glEnableVertexAttribArray(self.wi->mPosAttribute);
+  gl_success("glEnableVertexAttribArray");
+  glBindBuffer(GL_ARRAY_BUFFER, self.wi->mVertexbuffer);
+  gl_success("glBindBuffer");
+  glVertexAttribPointer(
+    self.wi->mPosAttribute,
+    2,
+    GL_FLOAT,
+    GL_FALSE,
+    0,
+    (void*)0
+  );
+  gl_success("glVertexAttribPointer");
 
-  GLint		saveMatrixMode;
-  glDisable(GL_TEXTURE_RECTANGLE_ARB);
-  glGetIntegerv(GL_MATRIX_MODE, &saveMatrixMode);
-  glMatrixMode(GL_TEXTURE);
-  glPopMatrix();
-  glMatrixMode(saveMatrixMode);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  gl_success("glDrawArrays");
 
-  [self.mContext flushBuffer];
+  glDisableVertexAttribArray(self.wi->mPosAttribute);
+  gl_success("glDisableVertexAttribArray");
 
-  IOSurfaceDecrementUseCount(surface);
+  [self.wi->mContext flushBuffer];
 }
 
 - (BOOL)wantsBestResolutionOpenGLSurface
@@ -271,34 +368,34 @@ void WindowObjCInt::init(void)
 
 void WindowObjCInt::createWindow(unsigned char* handle)
 {
-    CGWindowListOption listOptions;
-    CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID);
-    int count = [windowList count];
+  CGWindowListOption listOptions;
+  CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID);
+  int count = [windowList count];
 
-    for (CFIndex idx=0; idx<CFArrayGetCount(windowList); idx++) {
-        CFDictionaryRef dict = (CFDictionaryRef)CFArrayGetValueAtIndex(windowList, idx);
-        CFStringRef windowName = (CFStringRef)CFDictionaryGetValue(dict, kCGWindowName);
+  for (CFIndex idx=0; idx<CFArrayGetCount(windowList); idx++) {
+      CFDictionaryRef dict = (CFDictionaryRef)CFArrayGetValueAtIndex(windowList, idx);
+      CFStringRef windowName = (CFStringRef)CFDictionaryGetValue(dict, kCGWindowName);
 
-        NSInteger windowNumberInt = [[dict objectForKey:@"kCGWindowNumber"] integerValue];
+      NSInteger windowNumberInt = [[dict objectForKey:@"kCGWindowNumber"] integerValue];
 
-        NSString* nsWindowName = (NSString*)windowName;
-        if (nsWindowName && [nsWindowName isEqualToString:@"Streamlabs OBS"]) {
-            NSWindow* parentWin = [NSApp windowWithWindowNumber:windowNumberInt];
-            view = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
-            [parentWin.contentView addSubview:view];
+      NSString* nsWindowName = (NSString*)windowName;
+      if (nsWindowName && [nsWindowName isEqualToString:@"Streamlabs OBS"]) {
+          NSWindow* parentWin = [NSApp windowWithWindowNumber:windowNumberInt];
+          view = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+          [parentWin.contentView addSubview:view];
 
 
-            NSView *viewParent = *reinterpret_cast<NSView**>(handle);
-	          NSWindow *winParent = [viewParent window];
+          NSView *viewParent = *reinterpret_cast<NSView**>(handle);
+          NSWindow *winParent = [viewParent window];
 
-            if (winParent == parentWin)
-              NSLog(@"CORRECT WINDOW");
-            else
-              NSLog(@"INCORRECT WINDOW");
-        }
-    }
+          if (winParent == parentWin)
+            NSLog(@"CORRECT WINDOW");
+          else
+            NSLog(@"INCORRECT WINDOW");
+      }
+  }
 
-    CFRelease(windowList);
+  CFRelease(windowList);
 }
 
 void WindowObjCInt::destroyWindow(void)
@@ -312,10 +409,13 @@ void WindowObjCInt::connectIOSurfaceJS(uint32_t surfaceID)
 {
   surface = IOSurfaceLookup((IOSurfaceID) surfaceID);
 
-  [view setFrameSize:NSMakeSize(IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface))];
+  if (!surface)
+    return;
 
   stop = false;
   thread = new std::thread(renderFrames);
+
+  [view setFrameSize:NSMakeSize(IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface))];
 }
 
 void WindowObjCInt::destroyIOSurface(void)

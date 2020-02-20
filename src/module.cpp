@@ -73,4 +73,4 @@ void init(v8::Local<v8::Object> exports) {
     NODE_SET_METHOD(exports, "moveWindow", moveWindowJS);
 }
 
-NODE_MODULE(uiohookModule, init)
+NODE_MODULE(windowRendering, init)
