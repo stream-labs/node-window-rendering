@@ -66,4 +66,4 @@ void init(Local<Object> exports) {
     NODE_SET_METHOD(exports, "moveWindow", moveWindowJS);
 }
 
-NODE_MODULE(uiohookModule, init)
+NODE_MODULE(windowRendering, init)

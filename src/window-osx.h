@@ -32,6 +32,3 @@
 
 @interface MyOpenGLView : NSOpenGLView
 @end
-
-GLuint quadVAOId, quadVBOId;
-BOOL quadInit;
