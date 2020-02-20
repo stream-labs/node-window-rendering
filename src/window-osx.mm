@@ -368,34 +368,10 @@ void WindowObjCInt::init(void)
 
 void WindowObjCInt::createWindow(unsigned char* handle)
 {
-  CGWindowListOption listOptions;
-  CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID);
-  int count = [windowList count];
-
-  for (CFIndex idx=0; idx<CFArrayGetCount(windowList); idx++) {
-      CFDictionaryRef dict = (CFDictionaryRef)CFArrayGetValueAtIndex(windowList, idx);
-      CFStringRef windowName = (CFStringRef)CFDictionaryGetValue(dict, kCGWindowName);
-
-      NSInteger windowNumberInt = [[dict objectForKey:@"kCGWindowNumber"] integerValue];
-
-      NSString* nsWindowName = (NSString*)windowName;
-      if (nsWindowName && [nsWindowName isEqualToString:@"Streamlabs OBS"]) {
-          NSWindow* parentWin = [NSApp windowWithWindowNumber:windowNumberInt];
-          view = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
-          [parentWin.contentView addSubview:view];
-
-
-          NSView *viewParent = *reinterpret_cast<NSView**>(handle);
-          NSWindow *winParent = [viewParent window];
-
-          if (winParent == parentWin)
-            NSLog(@"CORRECT WINDOW");
-          else
-            NSLog(@"INCORRECT WINDOW");
-      }
-  }
-
-  CFRelease(windowList);
+  NSView *viewParent = *reinterpret_cast<NSView**>(handle);
+  NSWindow *winParent = [viewParent window];
+  view = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+  [winParent.contentView addSubview:view];
 }
 
 void WindowObjCInt::destroyWindow(void)
