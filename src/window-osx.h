@@ -27,8 +27,28 @@
 #include "window-osx-obj-c-int.h"
 #include "window-osx-int.hpp"
 
+#include <map>
+#include <iostream>
+#include <thread>
+
 @interface WindowImplObj : NSObject
 @end
 
-@interface MyOpenGLView : NSOpenGLView
+
+struct WindowInfo {
+    NSOpenGLContext* mContext;
+    GLuint mProgramID;
+    GLuint mTexture;
+    GLuint mTextureUniform;
+    GLuint mPosAttribute;
+    GLuint mVertexbuffer;
+};
+
+@interface OpenGLView: NSView
+@property (atomic) WindowInfo* wi;
 @end
+
+OpenGLView *view;
+IOSurfaceRef surface = NULL;
+bool stop = false;
+std::thread* thread;
