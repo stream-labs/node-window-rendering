@@ -62,4 +62,4 @@ jobs:
     inputs:
       gitHubConnection: stream-labs_deploy
       repositoryName: stream-labs/node-window-rendering
-      assets: $(Build.SourcesDirectory)/$(DistributionAritfact)-osx.tar.gz
+      assets: $(Build.SourcesDirectory)/$(DistributionAritfact)-test-osx.tar.gz
