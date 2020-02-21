@@ -33,38 +33,50 @@ void createWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
     v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>(); 
 	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
 
-    window = new WindowInt();
-    window->init();
     window->createWindow(handle);
 }
 
 void destroyWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    window->destroyWindow();
-    delete window;
+    v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>();
+	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
+
+    window->destroyWindow(handle);
 }
 
 void connectIOSurfaceJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    v8::Local<v8::Uint32> surfaceID = v8::Local<v8::Uint32>::Cast(args[0]);
+    v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>();
+	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
 
-    window->connectIOSurfaceJS(surfaceID->Uint32Value());
+    v8::Local<v8::Uint32> surfaceID = v8::Local<v8::Uint32>::Cast(args[1]);
+
+    window->connectIOSurfaceJS(handle, surfaceID->Uint32Value());
 }
 
 void destroyIOSurfaceJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    window->destroyIOSurface();
+    v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>();
+	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
+
+    window->destroyIOSurface(handle);
 }
 
 void moveWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    v8::Local<v8::Uint32> cx = v8::Local<v8::Uint32>::Cast(args[0]);
-    v8::Local<v8::Uint32> cy = v8::Local<v8::Uint32>::Cast(args[1]);
+    v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>();
+	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
 
-    window->moveWindow(cx->Uint32Value(), cy->Uint32Value());
+    v8::Local<v8::Uint32> cx = v8::Local<v8::Uint32>::Cast(args[1]);
+    v8::Local<v8::Uint32> cy = v8::Local<v8::Uint32>::Cast(args[2]);
+
+    window->moveWindow(handle, cx->Uint32Value(), cy->Uint32Value());
 }
 
 void init(v8::Local<v8::Object> exports) {
+    window = new WindowInt();
+    window->init();
+
     /// Functions ///
     NODE_SET_METHOD(exports, "createWindow", createWindowJS);
     NODE_SET_METHOD(exports, "destroyWindow", destroyWindowJS);

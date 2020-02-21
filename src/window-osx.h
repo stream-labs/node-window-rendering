@@ -34,21 +34,24 @@
 @interface WindowImplObj : NSObject
 @end
 
-
-struct WindowInfo {
+struct OpenGLData {
     NSOpenGLContext* mContext;
     GLuint mProgramID;
     GLuint mTexture;
     GLuint mTextureUniform;
     GLuint mPosAttribute;
     GLuint mVertexbuffer;
+    IOSurfaceRef surface = NULL;
 };
 
 @interface OpenGLView: NSView
-@property (atomic) WindowInfo* wi;
+@property (atomic) OpenGLData* glData;
 @end
 
-OpenGLView *view;
-IOSurfaceRef surface = NULL;
-bool stop = false;
-std::thread* thread;
+struct WindowInfo {
+    bool stop = false;
+    std::thread* thread;
+    OpenGLView* view;
+};
+
+std::map<void*, void*> windows; // <NSView* parent, WindowInfo* wi>

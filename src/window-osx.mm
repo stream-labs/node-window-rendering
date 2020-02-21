@@ -18,13 +18,13 @@
 
 #include "window-osx.h"
 
-void renderFrames()
+void renderFrames(WindowInfo* wi)
 {
-  while (!stop) {
+  while (!wi->stop) {
     std::this_thread::sleep_for(std::chrono::milliseconds(16));
     dispatch_sync(dispatch_get_main_queue(), ^{
-      if (!stop) {
-        view.needsDisplay = YES;
+      if (!wi->stop) {
+        wi->view.needsDisplay = YES;
       }
     });
   }
@@ -105,14 +105,14 @@ static inline bool gl_success(const char *funcname)
         NSOpenGLPFAAccelerated,
         0
     };
-    self.wi = new WindowInfo();
-    self.wi->mContext = [[NSOpenGLContext alloc] initWithFormat:[[NSOpenGLPixelFormat alloc] initWithAttributes:glAttributes]
+    self.glData = new OpenGLData();
+    self.glData->mContext = [[NSOpenGLContext alloc] initWithFormat:[[NSOpenGLPixelFormat alloc] initWithAttributes:glAttributes]
                                                 shareContext:nil];
     GLint swapInt = 1;
-    [self.wi->mContext setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+    [self.glData->mContext setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
     GLint opaque = 1;
-    [self.wi->mContext setValues:&opaque forParameter:NSOpenGLCPSurfaceOpacity];
-    [self.wi->mContext makeCurrentContext];
+    [self.glData->mContext setValues:&opaque forParameter:NSOpenGLCPSurfaceOpacity];
+    [self.glData->mContext makeCurrentContext];
     [self _initGL];
   }
   return self;
@@ -122,7 +122,7 @@ static inline bool gl_success(const char *funcname)
 {
   [self _cleanupGL];
   [NSOpenGLContext clearCurrentContext];
-  [self.wi->mContext release];
+  [self.glData->mContext release];
   [super dealloc];
 }
 
@@ -209,7 +209,7 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
 - (void)_initGL
 {
   // Create and compile our GLSL program from the shaders.
-  self.wi->mProgramID = CompileShaders(
+  self.glData->mProgramID = CompileShaders(
     "#version 120\n"
     "// Input vertex data, different for all executions of this shader.\n"
     "attribute vec2 aPos;\n"
@@ -230,16 +230,18 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   
   glActiveTexture(GL_TEXTURE0);
   gl_success("glActiveTexture");
-  glGenTextures(1, &self.wi->mTexture);
+  glGenTextures(1, &self.glData->mTexture);
   gl_success("glGenTextures");
-  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.wi->mTexture);
+  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.glData->mTexture);
   gl_success("glBindTexture");
 
-  self.wi->mTextureUniform = glGetUniformLocation(self.wi->mProgramID, "uSampler");
+  self.glData->mTextureUniform =
+    glGetUniformLocation(self.glData->mProgramID, "uSampler");
   gl_success("glGetUniformLocation");
 
   // Get a handle for our buffers
-  self.wi->mPosAttribute = glGetAttribLocation(self.wi->mProgramID, "aPos");
+  self.glData->mPosAttribute =
+    glGetAttribLocation(self.glData->mProgramID, "aPos");
   gl_success("glGetAttribLocation");
 
   static const GLfloat g_vertex_buffer_data[] = { 
@@ -249,37 +251,44 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
      1.0f,  1.0f,
   };
 
-  glGenBuffers(1, &self.wi->mVertexbuffer);
+  glGenBuffers(1, &self.glData->mVertexbuffer);
   gl_success("glGenBuffers");
-  glBindBuffer(GL_ARRAY_BUFFER, self.wi->mVertexbuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, self.glData->mVertexbuffer);
   gl_success("glBindBuffer");
-  glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER,
+              sizeof(g_vertex_buffer_data),
+              g_vertex_buffer_data, GL_STATIC_DRAW);
   gl_success("glBufferData");
 }
 
 - (void)_cleanupGL
 {
-  glDeleteTextures(1, &self.wi->mTexture);
-  glDeleteBuffers(1, &self.wi->mVertexbuffer);
-  glDeleteProgram(self.wi->mProgramID);
+  glDeleteTextures(1, &self.glData->mTexture);
+  glDeleteBuffers(1, &self.glData->mVertexbuffer);
+  glDeleteProgram(self.glData->mProgramID);
 }
 
 - (void)_surfaceNeedsUpdate:(NSNotification*)notification
 {
-  [self.wi->mContext update];
+  [self.glData->mContext update];
 }
 
 - (void)drawRect:(NSRect)aRect
 {
-  if (!surface)
+  if (!self.glData->surface)
     return;
 
-  CGLTexImageIOSurface2D([self.wi->mContext CGLContextObj], GL_TEXTURE_RECTANGLE_ARB, GL_RGBA, IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface),
-                        GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, surface, 0);
+  CGLTexImageIOSurface2D([self.glData->mContext CGLContextObj],
+                        GL_TEXTURE_RECTANGLE_ARB, GL_RGBA,
+                        IOSurfaceGetWidth(self.glData->surface),
+                        IOSurfaceGetHeight(self.glData->surface),
+                        GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
+                        self.glData->surface,
+                        0);
   gl_success("CGLTexImageIOSurface2D");
 
-  [self.wi->mContext setView:self];
-  [self.wi->mContext makeCurrentContext];
+  [self.glData->mContext setView:self];
+  [self.glData->mContext makeCurrentContext];
 
   NSSize backingSize = [self convertSizeToBacking:[self bounds].size];
   GLdouble width = backingSize.width;
@@ -293,28 +302,30 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   glClear(GL_COLOR_BUFFER_BIT);
   gl_success("glClear");
 
-  glUseProgram(self.wi->mProgramID);
+  glUseProgram(self.glData->mProgramID);
   gl_success("glUseProgram");
 
-  GLuint loc_size = glGetUniformLocation(self.wi->mProgramID, "size");
+  GLuint loc_size = glGetUniformLocation(self.glData->mProgramID, "size");
   gl_success("glGetUniformLocation");
-  glUniform2f(loc_size, (GLfloat)IOSurfaceGetWidth(surface), (GLfloat)IOSurfaceGetHeight(surface));
+  glUniform2f(loc_size,
+            (GLfloat)IOSurfaceGetWidth(self.glData->surface),
+            (GLfloat)IOSurfaceGetHeight(self.glData->surface));
   gl_success("glUniform2f");
 
   glActiveTexture(GL_TEXTURE0);
   gl_success("glActiveTexture");
-  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.wi->mTexture);
+  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.glData->mTexture);
   gl_success("glBindTexture");
 
-  glUniform1i(self.wi->mTextureUniform, 0);
+  glUniform1i(self.glData->mTextureUniform, 0);
   gl_success("glUniform1i");
 
-  glEnableVertexAttribArray(self.wi->mPosAttribute);
+  glEnableVertexAttribArray(self.glData->mPosAttribute);
   gl_success("glEnableVertexAttribArray");
-  glBindBuffer(GL_ARRAY_BUFFER, self.wi->mVertexbuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, self.glData->mVertexbuffer);
   gl_success("glBindBuffer");
   glVertexAttribPointer(
-    self.wi->mPosAttribute,
+    self.glData->mPosAttribute,
     2,
     GL_FLOAT,
     GL_FALSE,
@@ -326,10 +337,10 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   gl_success("glDrawArrays");
 
-  glDisableVertexAttribArray(self.wi->mPosAttribute);
+  glDisableVertexAttribArray(self.glData->mPosAttribute);
   gl_success("glDisableVertexAttribArray");
 
-  [self.wi->mContext flushBuffer];
+  [self.glData->mContext flushBuffer];
 }
 
 - (BOOL)wantsBestResolutionOpenGLSurface
@@ -368,44 +379,75 @@ void WindowObjCInt::init(void)
 
 void WindowObjCInt::createWindow(unsigned char* handle)
 {
+  WindowInfo* wi = new WindowInfo();
+
   NSView *viewParent = *reinterpret_cast<NSView**>(handle);
   NSWindow *winParent = [viewParent window];
-  view = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
-  [winParent.contentView addSubview:view];
+
+  wi->view = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+  [winParent.contentView addSubview:wi->view];
+
+  windows.emplace(viewParent, wi);
 }
 
-void WindowObjCInt::destroyWindow(void)
+void WindowObjCInt::destroyWindow(unsigned char* handle)
 {
-  stop = true;
-  [view removeFromSuperview];
-  CFRelease(view);
-}
-
-void WindowObjCInt::connectIOSurfaceJS(uint32_t surfaceID)
-{
-  surface = IOSurfaceLookup((IOSurfaceID) surfaceID);
-
-  if (!surface)
+  NSView *viewParent = *reinterpret_cast<NSView**>(handle);
+  auto it = windows.find(viewParent);
+  if (it == windows.end())
     return;
 
-  stop = false;
-  thread = new std::thread(renderFrames);
+  WindowInfo* wi = reinterpret_cast<WindowInfo*>(it->second);
+  wi->stop = true;
+  [wi->view removeFromSuperview];
+  CFRelease(wi->view);
 
-  [view setFrameSize:NSMakeSize(IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface))];
+  windows.erase(viewParent);
 }
 
-void WindowObjCInt::destroyIOSurface(void)
+void WindowObjCInt::connectIOSurfaceJS(unsigned char* handle, uint32_t surfaceID)
 {
-  if (surface) {
-    CFRelease(surface);
-    surface = NULL;
+  NSView* viewParent = *reinterpret_cast<NSView**>(handle);
+  auto it = windows.find(viewParent);
+  if (it == windows.end())
+    return;
+
+  WindowInfo* wi = reinterpret_cast<WindowInfo*>(it->second);
+  wi->view.glData->surface = IOSurfaceLookup((IOSurfaceID) surfaceID);
+
+  if (!wi->view.glData->surface)
+    return;
+
+  wi->stop = false;
+  wi->thread = new std::thread(renderFrames, wi);
+
+  [wi->view setFrameSize:NSMakeSize(IOSurfaceGetWidth(wi->view.glData->surface),
+                                  IOSurfaceGetHeight(wi->view.glData->surface))];
+}
+
+void WindowObjCInt::destroyIOSurface(unsigned char* handle)
+{
+  NSView *viewParent = *reinterpret_cast<NSView**>(handle);
+  auto it = windows.find(viewParent);
+  if (it == windows.end())
+    return;
+
+  WindowInfo* wi = reinterpret_cast<WindowInfo*>(it->second);
+  if (wi->view.glData->surface) {
+    CFRelease(wi->view.glData->surface);
+    wi->view.glData->surface = NULL;
   }
 }
 
-void WindowObjCInt::moveWindow(uint32_t cx, uint32_t cy)
+void WindowObjCInt::moveWindow(unsigned char* handle, uint32_t cx, uint32_t cy)
 {
-  std::cout << "NWR: coordinates: " << cx << ":" << cy << std::endl;
-  [view setFrameOrigin:NSMakePoint(cx, cy)];
+  NSView *viewParent = *reinterpret_cast<NSView**>(handle);
+  auto it = windows.find(viewParent);
+  if (it == windows.end())
+    return;
+
+  WindowInfo* wi = reinterpret_cast<WindowInfo*>(it->second);
+  [wi->view setFrameOrigin:NSMakePoint(cx, cy)];
 }
 
 @end

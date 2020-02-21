@@ -38,22 +38,22 @@ void WindowInt::createWindow(unsigned char* handle)
     _impl->createWindow(handle);
 }
 
-void WindowInt::destroyWindow(void)
+void WindowInt::destroyWindow(unsigned char* handle)
 {
-    _impl->destroyWindow();
+    _impl->destroyWindow(handle);
 }
 
-void WindowInt::connectIOSurfaceJS(uint32_t surfaceID)
+void WindowInt::connectIOSurfaceJS(unsigned char* handle, uint32_t surfaceID)
 {
-    _impl->connectIOSurfaceJS(surfaceID);
+    _impl->connectIOSurfaceJS(handle, surfaceID);
 }
 
-void WindowInt::destroyIOSurface(void)
+void WindowInt::destroyIOSurface(unsigned char* handle)
 {
-    _impl->destroyIOSurface();
+    _impl->destroyIOSurface(handle);
 }
 
-void WindowInt::moveWindow(uint32_t cx, uint32_t cy)
+void WindowInt::moveWindow(unsigned char* handle, uint32_t cx, uint32_t cy)
 {
-    _impl->moveWindow(cx, cy);
+    _impl->moveWindow(handle, cx, cy);
 }

@@ -31,10 +31,10 @@ public:
 
     void init(void);
     void createWindow(unsigned char* handle);
-    void destroyWindow(void);
-    void connectIOSurfaceJS(uint32_t surfaceID);
-    void destroyIOSurface(void);
-    void moveWindow(uint32_t cx, uint32_t cy);
+    void destroyWindow(unsigned char* handle);
+    void connectIOSurfaceJS(unsigned char* handle, uint32_t surfaceID);
+    void destroyIOSurface(unsigned char* handle);
+    void moveWindow(unsigned char* handle, uint32_t cx, uint32_t cy);
 
 private:
     WindowObjCInt * _impl;
