@@ -4,7 +4,7 @@ trigger:
       - master
   tags:
     include:
-      - v*
+      - '*'
 
 variables:
   BuildDirectory: build
