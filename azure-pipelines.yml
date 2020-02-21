@@ -1,0 +1,65 @@
+trigger:
+  branches:
+    include:
+      - master
+  tags:
+    include:
+      - v*
+
+variables:
+  BuildDirectory: build
+  Generator: Visual Studio 15 2017 Win64
+  DistributeDirectory: distribute
+  FullDistributePath: $(BuildDirectory)\$(DistributeDirectory)
+  DistributionAritfact: $(RuntimeName)-$(RuntimeVersion)-node-libuiohook
+  RuntimeURL: https://atom.io/download/atom-shell
+  RuntimeName: iojs
+  RuntimeVersion: v6.0.3
+
+jobs:
+- job: 'MacOSX'
+  pool:
+    vmImage: 'macos-10.14'
+  workspace:
+    clean: all
+
+  steps:
+  - powershell: git config --global core.autocrlf false
+    displayName: 'Set Unix checkout for git'
+
+  - checkout: self
+    fetchDepth: 10
+
+  - task: NodeTool@0
+    displayName: 'Install Node'
+    inputs:
+      versionSpec: '10.x'
+
+  - script: 'yarn install'
+    displayName: 'Install dependencies'
+
+  - script: './ci/build-osx.sh'
+    displayName: 'Build node-window-rendering'
+
+  - task: ArchiveFiles@2
+    displayName: 'Generate artifact'
+    inputs:
+      rootFolderOrFile: build/distribute/node-window-rendering
+      includeRootFolder: true
+      archiveType: tar
+      tarCompression: gz
+      archiveFile: '$(DistributionAritfact)-osx.tar.gz'
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish build artifact'
+    inputs: 
+      pathtoPublish: $(Build.SourcesDirectory)/$(DistributionAritfact)-osx.tar.gz
+      artifactName: $(DistributionAritfact)-osx.tar.gz
+
+  - task: GithubRelease@0 
+    displayName: 'Deploy to GitHub'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'tags'))  
+    inputs:
+      gitHubConnection: stream-labs_deploy
+      repositoryName: stream-labs/node-window-rendering
+      assets: $(Build.SourcesDirectory)/$(DistributionAritfact)-osx.tar.gz
