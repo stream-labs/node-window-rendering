@@ -30,6 +30,7 @@
 #include <map>
 #include <iostream>
 #include <thread>
+#include <mutex>
 
 @interface WindowImplObj : NSObject
 @end
@@ -42,6 +43,9 @@ struct OpenGLData {
     GLuint mPosAttribute;
     GLuint mVertexbuffer;
     IOSurfaceRef surface = NULL;
+    std::thread* thread;
+    std::mutex mtx;
+    bool stop = false;
 };
 
 @interface OpenGLView: NSView
@@ -49,9 +53,8 @@ struct OpenGLData {
 @end
 
 struct WindowInfo {
-    bool stop = false;
-    std::thread* thread;
     OpenGLView* view;
+    bool destroyed = false;
 };
 
 std::map<void*, void*> windows; // <NSView* parent, WindowInfo* wi>

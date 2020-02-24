@@ -20,10 +20,11 @@
 
 void renderFrames(WindowInfo* wi)
 {
-  while (!wi->stop) {
+  while (!wi->view.glData->stop) {
     std::this_thread::sleep_for(std::chrono::milliseconds(16));
-    dispatch_sync(dispatch_get_main_queue(), ^{
-      if (!wi->stop) {
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (!wi->destroyed && !wi->view.glData->stop) {
         wi->view.needsDisplay = YES;
       }
     });
@@ -120,9 +121,6 @@ static inline bool gl_success(const char *funcname)
 
 - (void)dealloc
 {
-  [self _cleanupGL];
-  [NSOpenGLContext clearCurrentContext];
-  [self.glData->mContext release];
   [super dealloc];
 }
 
@@ -275,8 +273,10 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
 
 - (void)drawRect:(NSRect)aRect
 {
-  if (!self.glData->surface)
+  if (!self.glData->surface || self.glData->stop)
     return;
+
+  self.glData->mtx.lock();
 
   CGLTexImageIOSurface2D([self.glData->mContext CGLContextObj],
                         GL_TEXTURE_RECTANGLE_ARB, GL_RGBA,
@@ -341,6 +341,7 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
   gl_success("glDisableVertexAttribArray");
 
   [self.glData->mContext flushBuffer];
+  self.glData->mtx.unlock();
 }
 
 - (BOOL)wantsBestResolutionOpenGLSurface
@@ -398,7 +399,18 @@ void WindowObjCInt::destroyWindow(unsigned char* handle)
     return;
 
   WindowInfo* wi = reinterpret_cast<WindowInfo*>(it->second);
-  wi->stop = true;
+  wi->view.glData->mtx.lock();
+  wi->view.glData->stop = true;
+
+  if (wi->view.glData->thread->joinable())
+    wi->view.glData->thread->join();
+
+  [self _cleanupGL];
+  [NSOpenGLContext clearCurrentContext];
+  [wi->view.glData->mContext release];
+  wi->destroyed = true;
+  wi->view.glData->mtx.unlock();
+
   [wi->view removeFromSuperview];
   CFRelease(wi->view);
 
@@ -418,8 +430,8 @@ void WindowObjCInt::connectIOSurfaceJS(unsigned char* handle, uint32_t surfaceID
   if (!wi->view.glData->surface)
     return;
 
-  wi->stop = false;
-  wi->thread = new std::thread(renderFrames, wi);
+  wi->view.glData->stop = false;
+  wi->view.glData->thread = new std::thread(renderFrames, wi);
 
   [wi->view setFrameSize:NSMakeSize(IOSurfaceGetWidth(wi->view.glData->surface),
                                   IOSurfaceGetHeight(wi->view.glData->surface))];
