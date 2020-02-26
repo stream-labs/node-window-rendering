@@ -33,27 +33,27 @@ WindowInt::~WindowInt(void)
     if (_impl) { delete _impl; _impl = nullptr; }
 }
 
-void WindowInt::createWindow(unsigned char* handle)
+void WindowInt::createWindow(std::string name, unsigned char* handle)
 {
-    _impl->createWindow(handle);
+    _impl->createWindow(name, handle);
 }
 
-void WindowInt::destroyWindow(unsigned char* handle)
+void WindowInt::destroyWindow(std::string name)
 {
-    _impl->destroyWindow(handle);
+    _impl->destroyWindow(name);
 }
 
-void WindowInt::connectIOSurfaceJS(unsigned char* handle, uint32_t surfaceID)
+void WindowInt::connectIOSurfaceJS(std::string name, uint32_t surfaceID)
 {
-    _impl->connectIOSurfaceJS(handle, surfaceID);
+    _impl->connectIOSurfaceJS(name, surfaceID);
 }
 
-void WindowInt::destroyIOSurface(unsigned char* handle)
+void WindowInt::destroyIOSurface(std::string name)
 {
-    _impl->destroyIOSurface(handle);
+    _impl->destroyIOSurface(name);
 }
 
-void WindowInt::moveWindow(unsigned char* handle, uint32_t cx, uint32_t cy)
+void WindowInt::moveWindow(std::string name, uint32_t cx, uint32_t cy)
 {
-    _impl->moveWindow(handle, cx, cy);
+    _impl->moveWindow(name, cx, cy);
 }

@@ -21,6 +21,7 @@
 
 
 #include <stdint.h>
+#include <string>
 
 class WindowObjCInt
 {
@@ -29,11 +30,11 @@ public:
     ~WindowObjCInt(void);
 
     void init(void);
-    void createWindow(unsigned char* handle);
-    void destroyWindow(unsigned char* handle);
-    void connectIOSurfaceJS(unsigned char* handle, uint32_t surfaceID);
-    void destroyIOSurface(unsigned char* handle);
-    void moveWindow(unsigned char* handle, uint32_t cx, uint32_t cy);
+    void createWindow(std::string name, unsigned char* handle);
+    void destroyWindow(std::string name);
+    void connectIOSurfaceJS(std::string name, uint32_t surfaceID);
+    void destroyIOSurface(std::string name);
+    void moveWindow(std::string name, uint32_t cx, uint32_t cy);
 
 private:
     void * self;

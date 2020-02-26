@@ -378,7 +378,7 @@ void WindowObjCInt::init(void)
     self = [[WindowImplObj alloc] init];
 }
 
-void WindowObjCInt::createWindow(unsigned char* handle)
+void WindowObjCInt::createWindow(std::string name, unsigned char* handle)
 {
   WindowInfo* wi = new WindowInfo();
 
@@ -388,13 +388,12 @@ void WindowObjCInt::createWindow(unsigned char* handle)
   wi->view = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
   [winParent.contentView addSubview:wi->view];
 
-  windows.emplace(viewParent, wi);
+  windows.emplace(name, wi);
 }
 
-void WindowObjCInt::destroyWindow(unsigned char* handle)
+void WindowObjCInt::destroyWindow(std::string name)
 {
-  NSView *viewParent = *reinterpret_cast<NSView**>(handle);
-  auto it = windows.find(viewParent);
+  auto it = windows.find(name);
   if (it == windows.end())
     return;
 
@@ -414,13 +413,12 @@ void WindowObjCInt::destroyWindow(unsigned char* handle)
   [wi->view removeFromSuperview];
   CFRelease(wi->view);
 
-  windows.erase(viewParent);
+  windows.erase(name);
 }
 
-void WindowObjCInt::connectIOSurfaceJS(unsigned char* handle, uint32_t surfaceID)
+void WindowObjCInt::connectIOSurfaceJS(std::string name, uint32_t surfaceID)
 {
-  NSView* viewParent = *reinterpret_cast<NSView**>(handle);
-  auto it = windows.find(viewParent);
+  auto it = windows.find(name);
   if (it == windows.end())
     return;
 
@@ -437,10 +435,9 @@ void WindowObjCInt::connectIOSurfaceJS(unsigned char* handle, uint32_t surfaceID
                                   IOSurfaceGetHeight(wi->view.glData->surface))];
 }
 
-void WindowObjCInt::destroyIOSurface(unsigned char* handle)
+void WindowObjCInt::destroyIOSurface(std::string name)
 {
-  NSView *viewParent = *reinterpret_cast<NSView**>(handle);
-  auto it = windows.find(viewParent);
+  auto it = windows.find(name);
   if (it == windows.end())
     return;
 
@@ -451,10 +448,9 @@ void WindowObjCInt::destroyIOSurface(unsigned char* handle)
   }
 }
 
-void WindowObjCInt::moveWindow(unsigned char* handle, uint32_t cx, uint32_t cy)
+void WindowObjCInt::moveWindow(std::string name, uint32_t cx, uint32_t cy)
 {
-  NSView *viewParent = *reinterpret_cast<NSView**>(handle);
-  auto it = windows.find(viewParent);
+  auto it = windows.find(name);
   if (it == windows.end())
     return;
 

@@ -31,6 +31,7 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
+#include <string>
 
 @interface WindowImplObj : NSObject
 @end
@@ -57,4 +58,4 @@ struct WindowInfo {
     bool destroyed = false;
 };
 
-std::map<void*, void*> windows; // <NSView* parent, WindowInfo* wi>
+std::map<std::string, void*> windows; // <std::string name, WindowInfo* wi>

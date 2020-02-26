@@ -30,47 +30,50 @@ WindowInt *window;
 
 void createWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
+    v8::String::Utf8Value str(v8::Isolate::GetCurrent(), args[0]);
+    std::string name(*str);
+
     v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>(); 
 	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
 
-    window->createWindow(handle);
+    window->createWindow(name, handle);
 }
 
 void destroyWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>();
-	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
+    v8::String::Utf8Value str(v8::Isolate::GetCurrent(), args[0]);
+    std::string name(*str);
 
-    window->destroyWindow(handle);
+    window->destroyWindow(name);
 }
 
 void connectIOSurfaceJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>();
-	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
+    v8::String::Utf8Value str(v8::Isolate::GetCurrent(), args[0]);
+    std::string name(*str);
 
     v8::Local<v8::Uint32> surfaceID = v8::Local<v8::Uint32>::Cast(args[1]);
 
-    window->connectIOSurfaceJS(handle, surfaceID->Uint32Value());
+    window->connectIOSurfaceJS(name, surfaceID->Uint32Value());
 }
 
 void destroyIOSurfaceJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>();
-	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
+    v8::String::Utf8Value str(v8::Isolate::GetCurrent(), args[0]);
+    std::string name(*str);
 
-    window->destroyIOSurface(handle);
+    window->destroyIOSurface(name);
 }
 
 void moveWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>();
-	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
+    v8::String::Utf8Value str(v8::Isolate::GetCurrent(), args[0]);
+    std::string name(*str);
 
     v8::Local<v8::Uint32> cx = v8::Local<v8::Uint32>::Cast(args[1]);
     v8::Local<v8::Uint32> cy = v8::Local<v8::Uint32>::Cast(args[2]);
 
-    window->moveWindow(handle, cx->Uint32Value(), cy->Uint32Value());
+    window->moveWindow(name, cx->Uint32Value(), cy->Uint32Value());
 }
 
 void init(v8::Local<v8::Object> exports) {
