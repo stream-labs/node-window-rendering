@@ -33,7 +33,7 @@ void createWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
     v8::String::Utf8Value str(v8::Isolate::GetCurrent(), args[0]);
     std::string name(*str);
 
-    v8::Local<v8::Object> bufferObj = args[0].As<v8::Object>(); 
+    v8::Local<v8::Object> bufferObj = args[1].As<v8::Object>();
 	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
 
     window->createWindow(name, handle);
