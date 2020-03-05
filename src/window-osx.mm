@@ -444,14 +444,6 @@ void WindowObjCInt::connectIOSurfaceJS(std::string name, uint32_t surfaceID)
 
   wi->view.glData->stop = false;
   wi->view.glData->thread = new std::thread(renderFrames, wi);
-
-  NSRect frame = [wi->window frame];
-  frame.size = NSMakeSize(IOSurfaceGetWidth(wi->view.glData->surface),
-  IOSurfaceGetHeight(wi->view.glData->surface));
-  [wi->window setFrame: frame display: YES animate: NO];
-
-  [wi->view setFrameSize:NSMakeSize(IOSurfaceGetWidth(wi->view.glData->surface),
-                                  IOSurfaceGetHeight(wi->view.glData->surface))];
 }
 
 void WindowObjCInt::destroyIOSurface(std::string name)
@@ -476,8 +468,22 @@ void WindowObjCInt::moveWindow(std::string name, uint32_t cx, uint32_t cy)
   WindowInfo* wi = reinterpret_cast<WindowInfo*>(it->second);
 
   NSWindow* parent = (NSWindow*)[wi->window parentWindow];
-  NSRect frame = [parent frame];
-  [wi->window setFrameOrigin:NSMakePoint(frame.origin.x + cx, frame.origin.y + cy)];
+  NSRect parentFrame = [parent frame];
+
+  NSRect frame = [wi->window frame];
+  frame.size = NSMakeSize(
+    IOSurfaceGetWidth(wi->view.glData->surface),
+    IOSurfaceGetHeight(wi->view.glData->surface)
+  );
+
+  frame.origin.x = parentFrame.origin.x + cx;
+  frame.origin.y = parentFrame.origin.y + cy;
+
+  [wi->view setFrameSize:NSMakeSize(IOSurfaceGetWidth(wi->view.glData->surface),
+                                  IOSurfaceGetHeight(wi->view.glData->surface))];
+
+  [wi->window setFrame:frame display: YES animate: NO];
+
 }
 
 @end
