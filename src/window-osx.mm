@@ -398,6 +398,9 @@ void WindowObjCInt::destroyWindow(std::string name)
     return;
 
   WindowInfo* wi = reinterpret_cast<WindowInfo*>(it->second);
+  if (!wi->view.glData->surface)
+    return;
+
   wi->view.glData->mtx.lock();
   wi->view.glData->stop = true;
 
