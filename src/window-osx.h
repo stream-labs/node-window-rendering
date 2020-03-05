@@ -55,6 +55,7 @@ struct OpenGLData {
 
 struct WindowInfo {
     OpenGLView* view;
+    NSWindow* window;
     bool destroyed = false;
 };
 

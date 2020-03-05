@@ -385,9 +385,18 @@ void WindowObjCInt::createWindow(std::string name, unsigned char* handle)
   NSView *viewParent = *reinterpret_cast<NSView**>(handle);
   NSWindow *winParent = [viewParent window];
 
+  NSRect content_rect = NSMakeRect(0, 0, 0, 0);
+  wi->window = [
+              [NSWindow alloc]
+              initWithContentRect:content_rect
+              styleMask:NSBorderlessWindowMask
+              backing:NSBackingStoreBuffered
+              defer:NO
+          ];
+  [winParent addChildWindow:wi->window ordered:NSWindowAbove];
+  wi->window.ignoresMouseEvents = true;
   wi->view = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
-  [winParent.contentView addSubview:wi->view];
-
+  [wi->window.contentView addSubview:wi->view];
   windows.emplace(name, wi);
 }
 
@@ -416,6 +425,8 @@ void WindowObjCInt::destroyWindow(std::string name)
   [wi->view removeFromSuperview];
   CFRelease(wi->view);
 
+  [wi->window close];
+
   windows.erase(name);
 }
 
@@ -433,6 +444,11 @@ void WindowObjCInt::connectIOSurfaceJS(std::string name, uint32_t surfaceID)
 
   wi->view.glData->stop = false;
   wi->view.glData->thread = new std::thread(renderFrames, wi);
+
+  NSRect frame = [wi->window frame];
+  frame.size = NSMakeSize(IOSurfaceGetWidth(wi->view.glData->surface),
+  IOSurfaceGetHeight(wi->view.glData->surface));
+  [wi->window setFrame: frame display: YES animate: NO];
 
   [wi->view setFrameSize:NSMakeSize(IOSurfaceGetWidth(wi->view.glData->surface),
                                   IOSurfaceGetHeight(wi->view.glData->surface))];
@@ -458,7 +474,10 @@ void WindowObjCInt::moveWindow(std::string name, uint32_t cx, uint32_t cy)
     return;
 
   WindowInfo* wi = reinterpret_cast<WindowInfo*>(it->second);
-  [wi->view setFrameOrigin:NSMakePoint(cx, cy)];
+
+  NSWindow* parent = (NSWindow*)[wi->window parentWindow];
+  NSRect frame = [parent frame];
+  [wi->window setFrameOrigin:NSMakePoint(frame.origin.x + cx, frame.origin.y + cy)];
 }
 
 @end
