@@ -18,6 +18,8 @@
 
 #include "window-osx.h"
 
+NSOperatingSystemVersion OSversion = [NSProcessInfo processInfo].operatingSystemVersion;
+
 void renderFrames(WindowInfo* wi)
 {
   while (!wi->view.glData->stop) {
@@ -385,18 +387,24 @@ void WindowObjCInt::createWindow(std::string name, unsigned char* handle)
   NSView *viewParent = *reinterpret_cast<NSView**>(handle);
   NSWindow *winParent = [viewParent window];
 
-  NSRect content_rect = NSMakeRect(0, 0, 0, 0);
-  wi->window = [
-              [NSWindow alloc]
-              initWithContentRect:content_rect
-              styleMask:NSBorderlessWindowMask
-              backing:NSBackingStoreBuffered
-              defer:NO
-          ];
-  [winParent addChildWindow:wi->window ordered:NSWindowAbove];
-  wi->window.ignoresMouseEvents = true;
   wi->view = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
-  [wi->window.contentView addSubview:wi->view];
+
+  if (OSversion.majorVersion == 10 && OSversion.minorVersion < 14) {
+    // Less performant but solves flickering issue on macOS High Sierra and lower
+    NSRect content_rect = NSMakeRect(0, 0, 0, 0);
+    wi->window = [
+                [NSWindow alloc]
+                initWithContentRect:content_rect
+                styleMask:NSBorderlessWindowMask
+                backing:NSBackingStoreBuffered
+                defer:NO
+            ];
+    [winParent addChildWindow:wi->window ordered:NSWindowAbove];
+    wi->window.ignoresMouseEvents = true;
+    [wi->window.contentView addSubview:wi->view];
+  } else {
+    [winParent.contentView addSubview:wi->view];
+  }
   windows.emplace(name, wi);
 }
 
@@ -425,7 +433,8 @@ void WindowObjCInt::destroyWindow(std::string name)
   [wi->view removeFromSuperview];
   CFRelease(wi->view);
 
-  [wi->window close];
+  if (wi->window)
+    [wi->window close];
 
   windows.erase(name);
 }
@@ -467,23 +476,28 @@ void WindowObjCInt::moveWindow(std::string name, uint32_t cx, uint32_t cy)
 
   WindowInfo* wi = reinterpret_cast<WindowInfo*>(it->second);
 
-  NSWindow* parent = (NSWindow*)[wi->window parentWindow];
-  NSRect parentFrame = [parent frame];
+  if (OSversion.majorVersion == 10 && OSversion.minorVersion < 14) {
+    NSWindow* parent = (NSWindow*)[wi->window parentWindow];
+    NSRect parentFrame = [parent frame];
 
-  NSRect frame = [wi->window frame];
-  frame.size = NSMakeSize(
-    IOSurfaceGetWidth(wi->view.glData->surface),
-    IOSurfaceGetHeight(wi->view.glData->surface)
-  );
+    NSRect frame = [wi->window frame];
+    frame.size = NSMakeSize(
+      IOSurfaceGetWidth(wi->view.glData->surface),
+      IOSurfaceGetHeight(wi->view.glData->surface)
+    );
 
-  frame.origin.x = parentFrame.origin.x + cx;
-  frame.origin.y = parentFrame.origin.y + cy;
+    frame.origin.x = parentFrame.origin.x + cx;
+    frame.origin.y = parentFrame.origin.y + cy;
 
-  [wi->view setFrameSize:NSMakeSize(IOSurfaceGetWidth(wi->view.glData->surface),
-                                  IOSurfaceGetHeight(wi->view.glData->surface))];
+    [wi->view setFrameSize:NSMakeSize(IOSurfaceGetWidth(wi->view.glData->surface),
+                                    IOSurfaceGetHeight(wi->view.glData->surface))];
 
-  [wi->window setFrame:frame display: YES animate: NO];
-
+    [wi->window setFrame:frame display: YES animate: NO];
+  } else {
+    [wi->view setFrameSize:NSMakeSize(IOSurfaceGetWidth(wi->view.glData->surface),
+                                    IOSurfaceGetHeight(wi->view.glData->surface))];
+    [wi->view setFrameOrigin:NSMakePoint(cx, cy)];
+  }
 }
 
 @end
