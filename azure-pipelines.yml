@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-      - master
+      - streamlabs
   tags:
     include:
       - '*'
@@ -11,7 +11,6 @@ variables:
   Generator: Visual Studio 15 2017 Win64
   DistributeDirectory: distribute
   FullDistributePath: $(BuildDirectory)\$(DistributeDirectory)
-  DistributionAritfact: $(RuntimeName)-$(RuntimeVersion)-node-window-rendering
   RuntimeURL: https://atom.io/download/atom-shell
   RuntimeName: iojs
   RuntimeVersion: v6.0.3
@@ -24,11 +23,11 @@ jobs:
     clean: all
 
   steps:
-  - powershell: git config --global core.autocrlf false
-    displayName: 'Set Unix checkout for git'
-
   - checkout: self
     fetchDepth: 10
+
+  - powershell: 'Write-Host "##vso[task.setvariable variable=tagartifact]node-window-rendering-$((git describe --tags --abbrev=0) | Out-String)"'
+    displayName: 'Get tag for artifact'
 
   - task: NodeTool@0
     displayName: 'Install Node'
@@ -48,18 +47,20 @@ jobs:
       includeRootFolder: true
       archiveType: tar
       tarCompression: gz
-      archiveFile: '$(DistributionAritfact)-osx.tar.gz'
+      archiveFile: '$(tagartifact)-osx.tar.gz'
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish build artifact'
     inputs: 
-      pathtoPublish: $(Build.SourcesDirectory)/$(DistributionAritfact)-osx.tar.gz
-      artifactName: $(DistributionAritfact)-osx.tar.gz
+      pathtoPublish: $(Build.SourcesDirectory)/$(tagartifact)-osx.tar.gz
+      artifactName: $(tagartifact)-osx.tar.gz
 
-  - task: GithubRelease@0 
-    displayName: 'Deploy to GitHub'
-    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'tags'))  
+  - task: S3Upload@1
     inputs:
-      gitHubConnection: stream-labs_deploy
-      repositoryName: stream-labs/node-window-rendering
-      assets: $(Build.SourcesDirectory)/$(DistributionAritfact)-osx.tar.gz
+      awsCredentials: 'SLOBS_BE_AWS'
+      regionName: 'us-west-2'
+      bucketName: 'slobs-node-window-rendering'
+      globExpressions: '$(tagartifact)-osx.tar.gz'
+      filesAcl: 'public-read'
+    displayName: 'Upload tag artifact to S3'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'tags'))
