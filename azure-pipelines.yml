@@ -38,6 +38,10 @@ jobs:
   - script: 'yarn install'
     displayName: 'Install dependencies'
 
+  - script: 'node ci/bump-version.js'
+    displayName: 'Bump version number'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'tags'))
+
   - script: './ci/build-osx.sh'
     displayName: 'Build node-window-rendering'
 
