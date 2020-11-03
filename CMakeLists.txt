@@ -9,12 +9,25 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 SET(NODEJS_URL "https://atom.io/download/atom-shell" CACHE STRING "Node.JS URL")
 SET(NODEJS_NAME "iojs" CACHE STRING "Node.JS Name")
-SET(NODEJS_VERSION "v6.0.3" CACHE STRING "Node.JS Version")
+SET(NODEJS_VERSION "v9.3.3" CACHE STRING "Node.JS Version")
 
 include(NodeJS)
 include(CPack)
 
 nodejs_init()
+
+# Include N-API wrappers
+execute_process(COMMAND node -p "require('node-addon-api').include"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE NODE_ADDON_API_DIR
+        )
+string(REPLACE "\n" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
+string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
+
+# list(APPEND PROJECT_INCLUDE_PATHS ${NODE_ADDON_API_DIR})
+
+# Define NAPI_VERSION
+add_definitions(-DNAPI_VERSION=4)
 
 find_package(OpenGL REQUIRED)
 
@@ -75,7 +88,7 @@ TARGET_LINK_LIBRARIES(
 
 TARGET_INCLUDE_DIRECTORIES(
 	${PROJECT_NAME}
-	PUBLIC ${PROJECT_INCLUDE_PATHS}
+	PUBLIC ${PROJECT_INCLUDE_PATHS} ${NODE_ADDON_API_DIR}
 )
 target_compile_definitions(
 	${PROJECT_NAME}

@@ -6,7 +6,7 @@
   "author": "Eddy Gharbi <eddygharbiema@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "nan": "^2.14.0"
+    "node-addon-api": "^3.0.2"
   },
   "devDependencies": {
     "colors": "^1.4.0",
