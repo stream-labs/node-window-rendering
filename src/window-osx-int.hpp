@@ -31,7 +31,7 @@ public:
     ~WindowInt(void);
 
     void init(void);
-    void createWindow(std::string name, unsigned char* handle);
+    void createWindow(std::string name, void **handle);
     void destroyWindow(std::string name);
     void connectIOSurfaceJS(std::string name, uint32_t surfaceID);
     void destroyIOSurface(std::string name);

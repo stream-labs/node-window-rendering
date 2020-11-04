@@ -27,9 +27,8 @@ Napi::Value createWindowJS(const Napi::CallbackInfo& info)
 {
     std::string name = info[0].ToString().Utf8Value();
     Napi::Buffer<void *> bufferData = info[1].As<Napi::Buffer<void*>>();
-    unsigned char* handle = static_cast<unsigned char*>(*reinterpret_cast<void **>(bufferData.Data()));
 
-    window->createWindow(name, handle);
+    window->createWindow(name, bufferData.Data());
 }
 
 Napi::Value destroyWindowJS(const Napi::CallbackInfo& info)
@@ -58,7 +57,7 @@ Napi::Value moveWindowJS(const Napi::CallbackInfo& info)
 {
     std::string name = info[0].ToString().Utf8Value();
     uint32_t cx = info[1].ToNumber().Uint32Value();
-    uint32_t cy = info[1].ToNumber().Uint32Value();
+    uint32_t cy = info[2].ToNumber().Uint32Value();
 
     window->moveWindow(name, cx, cy);
 }

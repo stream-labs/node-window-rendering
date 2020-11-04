@@ -33,7 +33,7 @@ WindowInt::~WindowInt(void)
     if (_impl) { delete _impl; _impl = nullptr; }
 }
 
-void WindowInt::createWindow(std::string name, unsigned char* handle)
+void WindowInt::createWindow(std::string name, void **handle)
 {
     _impl->createWindow(name, handle);
 }
