@@ -401,9 +401,9 @@ void WindowObjCInt::createWindow(std::string name, unsigned char* handle)
             ];
     [winParent addChildWindow:wi->window ordered:NSWindowAbove];
     wi->window.ignoresMouseEvents = true;
-    [wi->window.contentView addSubview:wi->view];
+    [wi->window.contentView addSubview:wi->view positioned:NSWindowBelow relativeTo:nil];
   } else {
-    [winParent.contentView addSubview:wi->view];
+    [winParent.contentView addSubview:wi->view positioned:NSWindowBelow relativeTo:nil];
   }
   windows.emplace(name, wi);
 }
