@@ -16,76 +16,77 @@
 
 ******************************************************************************/
 
-#include <node.h>
-#include <nan.h>
+#include <napi.h>
 
 #include "window-osx-int.hpp"
 #include <iostream>
 
-using namespace Nan;
-using namespace v8;
-using namespace std;
-
 WindowInt *window;
 
-void createWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
+Napi::Value createWindowJS(const Napi::CallbackInfo& info)
 {
-    v8::String::Utf8Value str(v8::Isolate::GetCurrent(), args[0]);
-    std::string name(*str);
+    std::string name = info[0].ToString().Utf8Value();
+    Napi::Buffer<void *> bufferData = info[1].As<Napi::Buffer<void*>>();
 
-    v8::Local<v8::Object> bufferObj = args[1].As<v8::Object>();
-	unsigned char* handle = (unsigned char*)node::Buffer::Data(bufferObj);
-
-    window->createWindow(name, handle);
+    window->createWindow(name, bufferData.Data());
 }
 
-void destroyWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
+Napi::Value destroyWindowJS(const Napi::CallbackInfo& info)
 {
-    v8::String::Utf8Value str(v8::Isolate::GetCurrent(), args[0]);
-    std::string name(*str);
+    std::string name = info[0].ToString().Utf8Value();
 
     window->destroyWindow(name);
 }
 
-void connectIOSurfaceJS(const v8::FunctionCallbackInfo<v8::Value>& args)
+Napi::Value connectIOSurfaceJS(const Napi::CallbackInfo& info)
 {
-    v8::String::Utf8Value str(v8::Isolate::GetCurrent(), args[0]);
-    std::string name(*str);
+    std::string name = info[0].ToString().Utf8Value();
+    uint32_t surfaceID = info[1].ToNumber().Uint32Value();
 
-    v8::Local<v8::Uint32> surfaceID = v8::Local<v8::Uint32>::Cast(args[1]);
-
-    window->connectIOSurfaceJS(name, surfaceID->Uint32Value());
+    window->connectIOSurfaceJS(name, surfaceID);
 }
 
-void destroyIOSurfaceJS(const v8::FunctionCallbackInfo<v8::Value>& args)
+Napi::Value destroyIOSurfaceJS(const Napi::CallbackInfo& info)
 {
-    v8::String::Utf8Value str(v8::Isolate::GetCurrent(), args[0]);
-    std::string name(*str);
+    std::string name = info[0].ToString().Utf8Value();
 
     window->destroyIOSurface(name);
 }
 
-void moveWindowJS(const v8::FunctionCallbackInfo<v8::Value>& args)
+Napi::Value moveWindowJS(const Napi::CallbackInfo& info)
 {
-    v8::String::Utf8Value str(v8::Isolate::GetCurrent(), args[0]);
-    std::string name(*str);
+    std::string name = info[0].ToString().Utf8Value();
+    uint32_t cx = info[1].ToNumber().Uint32Value();
+    uint32_t cy = info[2].ToNumber().Uint32Value();
 
-    v8::Local<v8::Uint32> cx = v8::Local<v8::Uint32>::Cast(args[1]);
-    v8::Local<v8::Uint32> cy = v8::Local<v8::Uint32>::Cast(args[2]);
-
-    window->moveWindow(name, cx->Uint32Value(), cy->Uint32Value());
+    window->moveWindow(name, cx, cy);
 }
 
-void init(v8::Local<v8::Object> exports) {
+void Init(Napi::Env env, Napi::Object exports) {
     window = new WindowInt();
     window->init();
 
     /// Functions ///
-    NODE_SET_METHOD(exports, "createWindow", createWindowJS);
-    NODE_SET_METHOD(exports, "destroyWindow", destroyWindowJS);
-    NODE_SET_METHOD(exports, "connectIOSurface", connectIOSurfaceJS);
-    NODE_SET_METHOD(exports, "destroyIOSurface", destroyIOSurfaceJS);
-    NODE_SET_METHOD(exports, "moveWindow", moveWindowJS);
+    exports.Set(
+        Napi::String::New(env, "createWindow"),
+        Napi::Function::New(env, createWindowJS));
+    exports.Set(
+        Napi::String::New(env, "destroyWindow"),
+        Napi::Function::New(env, destroyWindowJS));
+    exports.Set(
+        Napi::String::New(env, "connectIOSurface"),
+        Napi::Function::New(env, connectIOSurfaceJS));
+    exports.Set(
+        Napi::String::New(env, "destroyIOSurface"),
+        Napi::Function::New(env, destroyIOSurfaceJS));
+    exports.Set(
+        Napi::String::New(env, "moveWindow"),
+        Napi::Function::New(env, moveWindowJS));
 }
 
-NODE_MODULE(windowRendering, init)
+Napi::Object main_node(Napi::Env env, Napi::Object exports) {
+    Init(env, exports);
+    return exports;
+}
+
+NODE_API_MODULE(windowRendering, main_node)

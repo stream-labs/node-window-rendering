@@ -380,11 +380,11 @@ void WindowObjCInt::init(void)
     self = [[WindowImplObj alloc] init];
 }
 
-void WindowObjCInt::createWindow(std::string name, unsigned char* handle)
+void WindowObjCInt::createWindow(std::string name, void **handle)
 {
   WindowInfo* wi = new WindowInfo();
 
-  NSView *viewParent = *reinterpret_cast<NSView**>(handle);
+  NSView *viewParent = static_cast<NSView*>(*reinterpret_cast<void**>(handle));
   NSWindow *winParent = [viewParent window];
 
   wi->view = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
