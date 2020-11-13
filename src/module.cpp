@@ -29,6 +29,7 @@ Napi::Value createWindowJS(const Napi::CallbackInfo& info)
     Napi::Buffer<void *> bufferData = info[1].As<Napi::Buffer<void*>>();
 
     window->createWindow(name, bufferData.Data());
+    return info.Env().Undefined();
 }
 
 Napi::Value destroyWindowJS(const Napi::CallbackInfo& info)
@@ -36,6 +37,7 @@ Napi::Value destroyWindowJS(const Napi::CallbackInfo& info)
     std::string name = info[0].ToString().Utf8Value();
 
     window->destroyWindow(name);
+    return info.Env().Undefined();
 }
 
 Napi::Value connectIOSurfaceJS(const Napi::CallbackInfo& info)
@@ -44,6 +46,7 @@ Napi::Value connectIOSurfaceJS(const Napi::CallbackInfo& info)
     uint32_t surfaceID = info[1].ToNumber().Uint32Value();
 
     window->connectIOSurfaceJS(name, surfaceID);
+    return info.Env().Undefined();
 }
 
 Napi::Value destroyIOSurfaceJS(const Napi::CallbackInfo& info)
@@ -51,6 +54,7 @@ Napi::Value destroyIOSurfaceJS(const Napi::CallbackInfo& info)
     std::string name = info[0].ToString().Utf8Value();
 
     window->destroyIOSurface(name);
+    return info.Env().Undefined();
 }
 
 Napi::Value moveWindowJS(const Napi::CallbackInfo& info)
@@ -60,6 +64,7 @@ Napi::Value moveWindowJS(const Napi::CallbackInfo& info)
     uint32_t cy = info[2].ToNumber().Uint32Value();
 
     window->moveWindow(name, cx, cy);
+    return info.Env().Undefined();
 }
 
 void Init(Napi::Env env, Napi::Object exports) {
