@@ -33,9 +33,9 @@ WindowInt::~WindowInt(void)
     if (_impl) { delete _impl; _impl = nullptr; }
 }
 
-void WindowInt::createWindow(std::string name, void **handle)
+void WindowInt::createWindow(std::string name, void **handle, bool renderAtBottom)
 {
-    _impl->createWindow(name, handle);
+    _impl->createWindow(name, handle, renderAtBottom);
 }
 
 void WindowInt::destroyWindow(std::string name)

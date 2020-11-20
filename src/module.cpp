@@ -28,7 +28,11 @@ Napi::Value createWindowJS(const Napi::CallbackInfo& info)
     std::string name = info[0].ToString().Utf8Value();
     Napi::Buffer<void *> bufferData = info[1].As<Napi::Buffer<void*>>();
 
-    window->createWindow(name, bufferData.Data());
+    bool renderAtBottom = false;
+    if(info.Length() > 2)
+        renderAtBottom = info[2].ToBoolean().Value();
+
+    window->createWindow(name, bufferData.Data(), renderAtBottom);
     return info.Env().Undefined();
 }
 
