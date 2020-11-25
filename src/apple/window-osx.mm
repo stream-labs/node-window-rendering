@@ -16,6 +16,7 @@
 
 ******************************************************************************/
 
+#include "../window.h"
 #include "window-osx.h"
 
 NSOperatingSystemVersion OSversion = [NSProcessInfo processInfo].operatingSystemVersion;
@@ -364,23 +365,7 @@ CompileShaders(const char* vertexShader, const char* fragmentShader)
 
 @end
 
-@implementation WindowImplObj
-
-WindowObjCInt::WindowObjCInt(void)
-    : self(NULL)
-{   }
-
-WindowObjCInt::~WindowObjCInt(void)
-{
-    [(id)self dealloc];
-}
-
-void WindowObjCInt::init(void)
-{
-    self = [[WindowImplObj alloc] init];
-}
-
-void WindowObjCInt::createWindow(std::string name, void **handle)
+void createWindow(std::string name, void **handle)
 {
   WindowInfo* wi = new WindowInfo();
 
@@ -408,7 +393,7 @@ void WindowObjCInt::createWindow(std::string name, void **handle)
   windows.emplace(name, wi);
 }
 
-void WindowObjCInt::destroyWindow(std::string name)
+void destroyWindow(std::string name)
 {
   auto it = windows.find(name);
   if (it == windows.end())
@@ -424,7 +409,6 @@ void WindowObjCInt::destroyWindow(std::string name)
   if (wi->view.glData->thread->joinable())
     wi->view.glData->thread->join();
 
-  [self _cleanupGL];
   [NSOpenGLContext clearCurrentContext];
   [wi->view.glData->mContext release];
   wi->destroyed = true;
@@ -439,7 +423,7 @@ void WindowObjCInt::destroyWindow(std::string name)
   windows.erase(name);
 }
 
-void WindowObjCInt::connectIOSurfaceJS(std::string name, uint32_t surfaceID)
+void connectSharedMemory(std::string name, uint32_t surfaceID)
 {
   auto it = windows.find(name);
   if (it == windows.end())
@@ -455,7 +439,7 @@ void WindowObjCInt::connectIOSurfaceJS(std::string name, uint32_t surfaceID)
   wi->view.glData->thread = new std::thread(renderFrames, wi);
 }
 
-void WindowObjCInt::destroyIOSurface(std::string name)
+void destroySharedMemory(std::string name)
 {
   auto it = windows.find(name);
   if (it == windows.end())
@@ -468,7 +452,7 @@ void WindowObjCInt::destroyIOSurface(std::string name)
   }
 }
 
-void WindowObjCInt::moveWindow(std::string name, uint32_t cx, uint32_t cy)
+void moveWindow(std::string name, uint32_t cx, uint32_t cy)
 {
   auto it = windows.find(name);
   if (it == windows.end())
@@ -499,5 +483,3 @@ void WindowObjCInt::moveWindow(std::string name, uint32_t cx, uint32_t cy)
     [wi->view setFrameOrigin:NSMakePoint(cx, cy)];
   }
 }
-
-@end

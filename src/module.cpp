@@ -18,17 +18,15 @@
 
 #include <napi.h>
 
-#include "window-osx-int.hpp"
+#include "window.h"
 #include <iostream>
-
-WindowInt *window;
 
 Napi::Value createWindowJS(const Napi::CallbackInfo& info)
 {
     std::string name = info[0].ToString().Utf8Value();
     Napi::Buffer<void *> bufferData = info[1].As<Napi::Buffer<void*>>();
 
-    window->createWindow(name, bufferData.Data());
+    createWindow(name, bufferData.Data());
     return info.Env().Undefined();
 }
 
@@ -36,24 +34,24 @@ Napi::Value destroyWindowJS(const Napi::CallbackInfo& info)
 {
     std::string name = info[0].ToString().Utf8Value();
 
-    window->destroyWindow(name);
+    destroyWindow(name);
     return info.Env().Undefined();
 }
 
-Napi::Value connectIOSurfaceJS(const Napi::CallbackInfo& info)
+Napi::Value connectSharedMemoryJS(const Napi::CallbackInfo& info)
 {
     std::string name = info[0].ToString().Utf8Value();
     uint32_t surfaceID = info[1].ToNumber().Uint32Value();
 
-    window->connectIOSurfaceJS(name, surfaceID);
+    connectSharedMemory(name, surfaceID);
     return info.Env().Undefined();
 }
 
-Napi::Value destroyIOSurfaceJS(const Napi::CallbackInfo& info)
+Napi::Value destroySharedMemoryJS(const Napi::CallbackInfo& info)
 {
     std::string name = info[0].ToString().Utf8Value();
 
-    window->destroyIOSurface(name);
+    destroySharedMemory(name);
     return info.Env().Undefined();
 }
 
@@ -63,15 +61,11 @@ Napi::Value moveWindowJS(const Napi::CallbackInfo& info)
     uint32_t cx = info[1].ToNumber().Uint32Value();
     uint32_t cy = info[2].ToNumber().Uint32Value();
 
-    window->moveWindow(name, cx, cy);
+    moveWindow(name, cx, cy);
     return info.Env().Undefined();
 }
 
 void Init(Napi::Env env, Napi::Object exports) {
-    window = new WindowInt();
-    window->init();
-
-    /// Functions ///
     exports.Set(
         Napi::String::New(env, "createWindow"),
         Napi::Function::New(env, createWindowJS));
@@ -80,10 +74,10 @@ void Init(Napi::Env env, Napi::Object exports) {
         Napi::Function::New(env, destroyWindowJS));
     exports.Set(
         Napi::String::New(env, "connectIOSurface"),
-        Napi::Function::New(env, connectIOSurfaceJS));
+        Napi::Function::New(env, connectSharedMemoryJS));
     exports.Set(
         Napi::String::New(env, "destroyIOSurface"),
-        Napi::Function::New(env, destroyIOSurfaceJS));
+        Napi::Function::New(env, destroySharedMemoryJS));
     exports.Set(
         Napi::String::New(env, "moveWindow"),
         Napi::Function::New(env, moveWindowJS));

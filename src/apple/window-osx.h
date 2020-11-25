@@ -16,44 +16,41 @@
 
 ******************************************************************************/
 
-#include "window-osx-int.hpp"
-#include "window-osx-obj-c-int.h"
+#import "Foundation/Foundation.h"
+#import <Cocoa/Cocoa.h>
+#import <OpenGL/OpenGL.h>
+#import <OpenGL/gl3.h>
+#import <OpenGL/CGLIOSurface.h>
+#import <GLKit/GLKit.h>
+#import <OpenGL/gl.h>
 
-WindowInt::WindowInt(void)
-    : _impl (nullptr)
-{   }
+#include <map>
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <string>
 
-void WindowInt::init(void)
-{
-    _impl = new WindowObjCInt();
-}
+struct OpenGLData {
+    NSOpenGLContext* mContext;
+    GLuint mProgramID;
+    GLuint mTexture;
+    GLuint mTextureUniform;
+    GLuint mPosAttribute;
+    GLuint mVertexbuffer;
+    IOSurfaceRef surface = NULL;
+    std::thread* thread;
+    std::mutex mtx;
+    bool stop = false;
+};
 
-WindowInt::~WindowInt(void)
-{
-    if (_impl) { delete _impl; _impl = nullptr; }
-}
+@interface OpenGLView: NSView
+@property (atomic) OpenGLData* glData;
+@end
 
-void WindowInt::createWindow(std::string name, void **handle)
-{
-    _impl->createWindow(name, handle);
-}
+struct WindowInfo {
+    OpenGLView* view;
+    NSWindow* window;
+    bool destroyed = false;
+};
 
-void WindowInt::destroyWindow(std::string name)
-{
-    _impl->destroyWindow(name);
-}
-
-void WindowInt::connectIOSurfaceJS(std::string name, uint32_t surfaceID)
-{
-    _impl->connectIOSurfaceJS(name, surfaceID);
-}
-
-void WindowInt::destroyIOSurface(std::string name)
-{
-    _impl->destroyIOSurface(name);
-}
-
-void WindowInt::moveWindow(std::string name, uint32_t cx, uint32_t cy)
-{
-    _impl->moveWindow(name, cx, cy);
-}
+std::map<std::string, void*> windows; // <std::string name, WindowInfo* wi>

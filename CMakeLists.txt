@@ -43,11 +43,9 @@ find_library(GLKIT GLKit)
 #############################
 SET(PROJECT_SOURCE
 	"${PROJECT_SOURCE_DIR}/src/module.cpp"
-	"${PROJECT_SOURCE_DIR}/src/window-osx.mm"
-	"${PROJECT_SOURCE_DIR}/src/window-osx.h"
-	"${PROJECT_SOURCE_DIR}/src/window-osx-obj-c-int.h"
-	"${PROJECT_SOURCE_DIR}/src/window-osx-int.hpp"
-	"${PROJECT_SOURCE_DIR}/src/window-osx-int.cpp"
+	"${PROJECT_SOURCE_DIR}/src/window.h"
+	"${PROJECT_SOURCE_DIR}/src/apple/window-osx.mm"
+	"${PROJECT_SOURCE_DIR}/src/apple/window-osx.h"
 )
 
 SET(PROJECT_LIBRARIES
