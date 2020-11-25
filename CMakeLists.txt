@@ -29,23 +29,12 @@ string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 # Define NAPI_VERSION
 add_definitions(-DNAPI_VERSION=4)
 
-find_package(OpenGL REQUIRED)
-
-find_library(COREAUDIO CoreAudio)
-find_library(AUDIOUNIT AudioUnit)
-find_library(COREFOUNDATION CoreFoundation)
-find_library(IOSURF IOSurface)
-find_library(COCOA Cocoa)
-find_library(GLKIT GLKit)
-
 #############################
 # Source, Libraries & Directories
 #############################
 SET(PROJECT_SOURCE
 	"${PROJECT_SOURCE_DIR}/src/module.cpp"
 	"${PROJECT_SOURCE_DIR}/src/window.h"
-	"${PROJECT_SOURCE_DIR}/src/apple/window-osx.mm"
-	"${PROJECT_SOURCE_DIR}/src/apple/window-osx.h"
 )
 
 SET(PROJECT_LIBRARIES
@@ -55,14 +44,40 @@ SET(PROJECT_LIBRARIES
 SET(PROJECT_INCLUDE_PATHS
 	${NODEJS_INCLUDE_DIRS}
 	"${CMAKE_SOURCE_DIR}/source/"
-	${OPENGL_INCLUDE_DIR}
-	${COREAUDIO}
-	${AUDIOUNIT}
-	${COREFOUNDATION}
-	${IOSURF}
-	${COCOA}
-	${GLKIT}
 )
+
+if(APPLE)
+	find_package(OpenGL REQUIRED)
+	find_library(COREAUDIO CoreAudio)
+	find_library(AUDIOUNIT AudioUnit)
+	find_library(COREFOUNDATION CoreFoundation)
+	find_library(IOSURF IOSurface)
+	find_library(COCOA Cocoa)
+	find_library(GLKIT GLKit)
+
+	LIST(APPEND PROJECT_SOURCE
+		"${PROJECT_SOURCE_DIR}/src/apple/window-osx.mm"
+		"${PROJECT_SOURCE_DIR}/src/apple/window-osx.h"
+	)
+	LIST(APPEND PROJECT_INCLUDE_PATHS
+		${OPENGL_INCLUDE_DIR}
+		${COREAUDIO}
+		${AUDIOUNIT}
+		${COREFOUNDATION}
+		${IOSURF}
+		${COCOA}
+		${GLKIT}
+	)
+	LIST(APPEND PROJECT_LIBRARIES
+		${OPENGL_gl_LIBRARY}
+		${COREAUDIO}
+		${AUDIOUNIT}
+		${COREFOUNDATION}
+		${IOSURF}
+		${COCOA}
+		${GLKIT}
+	)
+endif()
 
 #############################
 # Building
@@ -75,13 +90,6 @@ add_nodejs_module(
 TARGET_LINK_LIBRARIES(
 	${PROJECT_NAME}
 	${PROJECT_LIBRARIES}
-	${OPENGL_gl_LIBRARY}
-	${COREAUDIO}
-	${AUDIOUNIT}
-	${COREFOUNDATION}
-	${IOSURF}
-	${COCOA}
-	${GLKIT}
 )
 
 TARGET_INCLUDE_DIRECTORIES(
