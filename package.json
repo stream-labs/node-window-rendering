@@ -5,9 +5,7 @@
   "repository": "git@github.com:stream-labs/node-window-rendering.git",
   "author": "Eddy Gharbi <eddygharbiema@gmail.com>",
   "license": "MIT",
-  "dependencies": {
-    "node-addon-api": "^3.0.2"
-  },
+  "dependencies": {},
   "devDependencies": {
     "colors": "^1.4.0",
     "fs": "^0.0.1-security",

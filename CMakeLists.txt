@@ -16,25 +16,12 @@ include(CPack)
 
 nodejs_init()
 
-# Include N-API wrappers
-execute_process(COMMAND node -p "require('node-addon-api').include"
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE NODE_ADDON_API_DIR
-        )
-string(REPLACE "\n" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
-string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
-
-# list(APPEND PROJECT_INCLUDE_PATHS ${NODE_ADDON_API_DIR})
-
-# Define NAPI_VERSION
-add_definitions(-DNAPI_VERSION=4)
-
 #############################
 # Source, Libraries & Directories
 #############################
 SET(PROJECT_SOURCE
-	"${PROJECT_SOURCE_DIR}/src/module.cpp"
-	"${PROJECT_SOURCE_DIR}/src/window.h"
+	"${PROJECT_SOURCE_DIR}/src/module.c"
+	"${PROJECT_SOURCE_DIR}/src/window-rendering.h"
 )
 
 SET(PROJECT_LIBRARIES
@@ -77,6 +64,19 @@ if(APPLE)
 		${COCOA}
 		${GLKIT}
 	)
+elseif(WIN32)
+	LIST(APPEND PROJECT_SOURCE
+		"${PROJECT_SOURCE_DIR}/src/windows/window-rendering-win32.c"
+
+	)
+	LIST(APPEND PROJECT_LIBRARIES
+		dxgi.lib
+		d3d11.lib
+	)
+
+	if(WIN32)
+		add_definitions(-DUNICODE -D_UNICODE -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS)
+	endif()
 endif()
 
 #############################
