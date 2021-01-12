@@ -34,7 +34,7 @@ add_definitions(-DNAPI_VERSION=4)
 #############################
 SET(PROJECT_SOURCE
 	"${PROJECT_SOURCE_DIR}/src/module.cpp"
-	"${PROJECT_SOURCE_DIR}/src/window.h"
+	"${PROJECT_SOURCE_DIR}/src/window-rendering.h"
 )
 
 SET(PROJECT_LIBRARIES
@@ -56,8 +56,8 @@ if(APPLE)
 	find_library(GLKIT GLKit)
 
 	LIST(APPEND PROJECT_SOURCE
-		"${PROJECT_SOURCE_DIR}/src/apple/window-osx.mm"
-		"${PROJECT_SOURCE_DIR}/src/apple/window-osx.h"
+		"${PROJECT_SOURCE_DIR}/src/apple/window-rendering-osx.mm"
+		"${PROJECT_SOURCE_DIR}/src/apple/window-rendering-osx.h"
 	)
 	LIST(APPEND PROJECT_INCLUDE_PATHS
 		${OPENGL_INCLUDE_DIR}
@@ -76,6 +76,15 @@ if(APPLE)
 		${IOSURF}
 		${COCOA}
 		${GLKIT}
+	)
+elseif(WIN32)
+	LIST(APPEND PROJECT_SOURCE
+		"${PROJECT_SOURCE_DIR}/src/windows/window-rendering-win32.cpp"
+	)
+
+	LIST(APPEND PROJECT_LIBRARIES
+		dxgi.lib
+		d3d11.lib
 	)
 endif()
 

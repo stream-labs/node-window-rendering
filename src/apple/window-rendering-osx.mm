@@ -16,7 +16,7 @@
 
 ******************************************************************************/
 
-#include "../window.h"
+#include "../window-rendering.h"
 #include "window-osx.h"
 
 NSOperatingSystemVersion OSversion = [NSProcessInfo processInfo].operatingSystemVersion;

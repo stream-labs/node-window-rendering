@@ -18,15 +18,15 @@
 
 #include <napi.h>
 
-#include "window.h"
-#include <iostream>
+#include "window-rendering.h"
 
 Napi::Value createWindowJS(const Napi::CallbackInfo& info)
 {
-    std::string name = info[0].ToString().Utf8Value();
-    Napi::Buffer<void *> bufferData = info[1].As<Napi::Buffer<void*>>();
+    // std::string name = info[0].ToString().Utf8Value();
+    // Napi::Buffer<void *> bufferData = info[1].As<Napi::Buffer<void*>>();
 
-    createWindow(name, bufferData.Data());
+    // createWindow(name, bufferData.Data());
+    createWindow("", nullptr);
     return info.Env().Undefined();
 }
 
