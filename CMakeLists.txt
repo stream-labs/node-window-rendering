@@ -85,6 +85,7 @@ elseif(WIN32)
 	LIST(APPEND PROJECT_LIBRARIES
 		dxgi.lib
 		d3d11.lib
+		d3dcompiler.lib
 	)
 endif()
 
