@@ -86,6 +86,7 @@ elseif(WIN32)
 		dxgi.lib
 		d3d11.lib
 		d3dcompiler.lib
+		dxguid.lib
 	)
 endif()
 
