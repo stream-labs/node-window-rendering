@@ -88,7 +88,7 @@ void UpdateScene()
 	cube1World = DirectX::XMMatrixIdentity();
 
 	//Define cube1's world space matrix
-	DirectX::XMVECTOR rotaxis = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	DirectX::XMVECTOR rotaxis = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 	Rotation = DirectX::XMMatrixRotationAxis( rotaxis, rot);
 	Translation = DirectX::XMMatrixTranslation( 0.0f, 0.0f, 4.0f );
 
