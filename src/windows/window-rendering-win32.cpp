@@ -85,7 +85,7 @@ void UpdateScene()
 	//Define cube1's world space matrix
 	DirectX::XMVECTOR rotaxis = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
 	Rotation = DirectX::XMMatrixRotationAxis( rotaxis, rot);
-	Translation = DirectX::XMMatrixTranslation( 0.0f, 0.0f, 0.0f );
+	Translation = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 
 	//Set cube1's world space using the transformations
 	cube1World = Translation * Rotation;
@@ -94,24 +94,24 @@ void UpdateScene()
 void DrawScene() {
 		HRESULT hr;
 
-		ID3D11Texture2D* output_tex;
-		hr = device_ptr->OpenSharedResource((HANDLE)(uintptr_t)g_sharedHandle,
-							__uuidof(ID3D11Texture2D),
-							(void **)&output_tex);
-		if (FAILED(hr))
-			return;
+		// ID3D11Texture2D* output_tex;
+		// hr = device_ptr->OpenSharedResource((HANDLE)(uintptr_t)g_sharedHandle,
+		// 					__uuidof(ID3D11Texture2D),
+		// 					(void **)&output_tex);
+		// if (FAILED(hr))
+		// 	return;
 
-		D3D11_TEXTURE2D_DESC pDesc = {0};
-		output_tex->GetDesc(&pDesc);
+		// D3D11_TEXTURE2D_DESC pDesc = {0};
+		// output_tex->GetDesc(&pDesc);
 
-		D3D11_SHADER_RESOURCE_VIEW_DESC resourceDesc = {};
-		resourceDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-		resourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-		resourceDesc.Texture2D.MipLevels = 1;
+		// D3D11_SHADER_RESOURCE_VIEW_DESC resourceDesc = {};
+		// resourceDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+		// resourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		// resourceDesc.Texture2D.MipLevels = 1;
 
-		hr = device_ptr->CreateShaderResourceView(output_tex, &resourceDesc, &shaderRes);
-		if (FAILED(hr))
-			return;
+		// hr = device_ptr->CreateShaderResourceView(output_tex, &resourceDesc, &shaderRes);
+		// if (FAILED(hr))
+		// 	return;
 
 		//Clear our backbuffer
 		float bgColor[4] = {(200.0f, 200.0f, 200.0f, 1.0f)};
@@ -121,8 +121,12 @@ void DrawScene() {
 		device_context_ptr->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 		//Set the WVP matrix and send it to the constant buffer in effect file
-		WVP = cube1World * camView * camProjection;
-		cbPerObj.WVP = XMMatrixTranspose(WVP);	
+		// WVP = cube1World * camView * camProjection;
+		// cbPerObj.WVP = XMMatrixTranspose(WVP);	
+
+		WVP =  DirectX::XMMatrixScaling( 1.0f, 1.0f, 0.0f ) * DirectX::XMMatrixTranslation( 0.0f, 0.0f, 0.0f );
+		cbPerObj.WVP = DirectX::XMMatrixTranspose(WVP);
+
 		device_context_ptr->UpdateSubresource( cbPerObjectBuffer, 0, NULL, &cbPerObj, 0, 0 );
 		device_context_ptr->VSSetConstantBuffers( 0, 1, &cbPerObjectBuffer );
 		
@@ -130,12 +134,13 @@ void DrawScene() {
 		device_context_ptr->PSSetSamplers( 0, 1, &CubesTexSamplerState );
 
 		//Draw the first cube
-		device_context_ptr->DrawIndexed( 36, 0, 0 );
+		device_context_ptr->DrawIndexed(36, 0, 0);
+		// device_context_ptr->Draw(36, 0);
 
 		//Present the backbuffer to the screen
 		swap_chain_ptr->Present(0, 0);
 
-		output_tex->Release();
+		// output_tex->Release();
 }
 
 LRESULT CALLBACK DisplayWndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -176,8 +181,8 @@ static inline HMODULE load_system_library(const char *name)
 }
 
 void createWindow(std::string name, void **handle, int width, int height) {
-	g_width = width;
-	g_height = height;
+	g_width = 1920;
+	g_height = 1080;
 	DisplayWndClassObj.cbSize = sizeof(WNDCLASSEX);
 	DisplayWndClassObj.style  = 0;
 	DisplayWndClassObj.lpfnWndProc   = DisplayWndProc;
@@ -234,7 +239,7 @@ void createWindow(std::string name, void **handle, int width, int height) {
 	bufferDesc.Height = g_height;
 	bufferDesc.RefreshRate.Numerator = 60;
 	bufferDesc.RefreshRate.Denominator = 1;
-	bufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	bufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	bufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	bufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 
@@ -505,7 +510,7 @@ void connectSharedMemory(std::string name, uint32_t sharedHandle) {
 
 	//Camera information
 	camPosition = DirectX::XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
-	camTarget = DirectX::XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
+	camTarget = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	camUp = DirectX::XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
 
 	//Set the View matrix
@@ -516,7 +521,7 @@ void connectSharedMemory(std::string name, uint32_t sharedHandle) {
 
 		
 	D3D11_SHADER_RESOURCE_VIEW_DESC resourceDesc = {};
-	resourceDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	resourceDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	resourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	resourceDesc.Texture2D.MipLevels = 1;
 
