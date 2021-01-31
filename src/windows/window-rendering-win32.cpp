@@ -5,6 +5,8 @@
 #include <d3dcompiler.h>
 #include <directxmath.h>
 
+#include <thread>
+
 WNDCLASSEX DisplayWndClassObj;
 ATOM       DisplayWndClassAtom;
 
@@ -77,41 +79,11 @@ D3D11_INPUT_ELEMENT_DESC layout[] =
 };
 UINT numElements = ARRAYSIZE(layout);
 
-void UpdateScene()
-{
-	//Reset cube1World
-	cube1World = DirectX::XMMatrixIdentity();
-
-	//Define cube1's world space matrix
-	DirectX::XMVECTOR rotaxis = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
-	Rotation = DirectX::XMMatrixRotationAxis( rotaxis, rot);
-	Translation = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-
-	//Set cube1's world space using the transformations
-	cube1World = Translation * Rotation;
-}
+bool stop_rendering = false;
+std::thread *worker;
 
 void DrawScene() {
 		HRESULT hr;
-
-		// ID3D11Texture2D* output_tex;
-		// hr = device_ptr->OpenSharedResource((HANDLE)(uintptr_t)g_sharedHandle,
-		// 					__uuidof(ID3D11Texture2D),
-		// 					(void **)&output_tex);
-		// if (FAILED(hr))
-		// 	return;
-
-		// D3D11_TEXTURE2D_DESC pDesc = {0};
-		// output_tex->GetDesc(&pDesc);
-
-		// D3D11_SHADER_RESOURCE_VIEW_DESC resourceDesc = {};
-		// resourceDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-		// resourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-		// resourceDesc.Texture2D.MipLevels = 1;
-
-		// hr = device_ptr->CreateShaderResourceView(output_tex, &resourceDesc, &shaderRes);
-		// if (FAILED(hr))
-		// 	return;
 
 		//Clear our backbuffer
 		float bgColor[4] = {(200.0f, 200.0f, 200.0f, 1.0f)};
@@ -119,10 +91,6 @@ void DrawScene() {
 
 		//Refresh the Depth/Stencil view
 		device_context_ptr->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-		//Set the WVP matrix and send it to the constant buffer in effect file
-		// WVP = cube1World * camView * camProjection;
-		// cbPerObj.WVP = XMMatrixTranspose(WVP);	
 
 		WVP =  DirectX::XMMatrixScaling( 1.0f, 1.0f, 0.0f ) * DirectX::XMMatrixTranslation( 0.0f, 0.0f, 0.0f );
 		cbPerObj.WVP = DirectX::XMMatrixTranspose(WVP);
@@ -135,22 +103,22 @@ void DrawScene() {
 
 		//Draw the first cube
 		device_context_ptr->DrawIndexed(36, 0, 0);
-		// device_context_ptr->Draw(36, 0);
 
 		//Present the backbuffer to the screen
 		swap_chain_ptr->Present(0, 0);
+}
 
-		// output_tex->Release();
+void worker_rendering() {
+	while(!stop_rendering) {
+		if (shouldRender) {
+			DrawScene();
+			std::this_thread::sleep_for(std::chrono::milliseconds(16));
+		}
+	}
 }
 
 LRESULT CALLBACK DisplayWndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
-	if (shouldRender) {
-		UpdateScene();
-		DrawScene();	
-	}
-
-
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
@@ -554,10 +522,13 @@ void connectSharedMemory(std::string name, uint32_t sharedHandle) {
 	hr = device_ptr->CreateSamplerState( &sampDesc, &CubesTexSamplerState );
 
 	shouldRender = true;
+	worker = new std::thread(worker_rendering);
 }
 
 void destroySharedMemory(std::string name) {
-
+	stop_rendering = true;
+	if (worker->joinable())
+		worker->join();
 }
 
 void moveWindow(std::string name, uint32_t cx, uint32_t cy) {
