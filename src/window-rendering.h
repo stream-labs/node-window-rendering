@@ -1,6 +1,6 @@
 #include <string>
 
-void createWindow(std::string name, void **handle);
+void createWindow(std::string name, void **handle, int width, int height);
 void destroyWindow(std::string name);
 void connectSharedMemory(std::string name, uint32_t surfaceID);
 void destroySharedMemory(std::string name);

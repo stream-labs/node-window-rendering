@@ -46,7 +46,7 @@ DirectX::XMVECTOR camUp;
 DirectX::XMMATRIX Rotation;
 DirectX::XMMATRIX Scale;
 DirectX::XMMATRIX Translation;
-float rot = 0.01f;
+float rot = 0.0f;
 
 ID3D11SamplerState* CubesTexSamplerState;
 
@@ -56,6 +56,8 @@ struct cbPerObject
 };
 
 cbPerObject cbPerObj;
+
+int g_width, g_height = 0;
 
 struct Vertex
 {
@@ -81,26 +83,35 @@ void UpdateScene()
 	cube1World = DirectX::XMMatrixIdentity();
 
 	//Define cube1's world space matrix
-	DirectX::XMVECTOR rotaxis = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	DirectX::XMVECTOR rotaxis = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
 	Rotation = DirectX::XMMatrixRotationAxis( rotaxis, rot);
-	Translation = DirectX::XMMatrixTranslation( 0.0f, 0.0f, 4.0f );
+	Translation = DirectX::XMMatrixTranslation( 0.0f, 0.0f, 0.0f );
 
 	//Set cube1's world space using the transformations
 	cube1World = Translation * Rotation;
-
-	//Reset cube2World
-	cube2World = DirectX::XMMatrixIdentity();
-
-	//Define cube2's world space matrix
-	Rotation = DirectX::XMMatrixRotationAxis( rotaxis, -rot);
-	Scale = DirectX::XMMatrixScaling( 1.0f, 1.0f, 1.0f );
-
-	//Set cube2's world space matrix
-	cube2World = Rotation * Scale;
 }
 
 void DrawScene() {
 		HRESULT hr;
+
+		ID3D11Texture2D* output_tex;
+		hr = device_ptr->OpenSharedResource((HANDLE)(uintptr_t)g_sharedHandle,
+							__uuidof(ID3D11Texture2D),
+							(void **)&output_tex);
+		if (FAILED(hr))
+			return;
+
+		D3D11_TEXTURE2D_DESC pDesc = {0};
+		output_tex->GetDesc(&pDesc);
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC resourceDesc = {};
+		resourceDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+		resourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		resourceDesc.Texture2D.MipLevels = 1;
+
+		hr = device_ptr->CreateShaderResourceView(output_tex, &resourceDesc, &shaderRes);
+		if (FAILED(hr))
+			return;
 
 		//Clear our backbuffer
 		float bgColor[4] = {(200.0f, 200.0f, 200.0f, 1.0f)};
@@ -123,6 +134,8 @@ void DrawScene() {
 
 		//Present the backbuffer to the screen
 		swap_chain_ptr->Present(0, 0);
+
+		output_tex->Release();
 }
 
 LRESULT CALLBACK DisplayWndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -162,7 +175,9 @@ static inline HMODULE load_system_library(const char *name)
 	return LoadLibraryA(base_path);
 }
 
-void createWindow(std::string name, void **handle) {
+void createWindow(std::string name, void **handle, int width, int height) {
+	g_width = width;
+	g_height = height;
 	DisplayWndClassObj.cbSize = sizeof(WNDCLASSEX);
 	DisplayWndClassObj.style  = 0;
 	DisplayWndClassObj.lpfnWndProc   = DisplayWndProc;
@@ -189,8 +204,8 @@ void createWindow(std::string name, void **handle) {
         WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,
         0,
         0,
-        1920,
-        1080,
+        g_width,
+        g_height,
         NULL,
         NULL,
         NULL,
@@ -215,11 +230,11 @@ void createWindow(std::string name, void **handle) {
 
 	ZeroMemory(&bufferDesc, sizeof(DXGI_MODE_DESC));
 
-	bufferDesc.Width = 1920;
-	bufferDesc.Height = 1080;
+	bufferDesc.Width = g_width;
+	bufferDesc.Height = g_height;
 	bufferDesc.RefreshRate.Numerator = 60;
 	bufferDesc.RefreshRate.Denominator = 1;
-	bufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	bufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 	bufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	bufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 
@@ -278,6 +293,9 @@ void connectSharedMemory(std::string name, uint32_t sharedHandle) {
 	if (FAILED(hr))
 		return;
 
+	D3D11_TEXTURE2D_DESC pDesc2;
+	framebuffer->GetDesc(&pDesc2);
+
 	//Create our Render Target
 	hr = device_ptr->CreateRenderTargetView( framebuffer, NULL, &render_target_view_ptr );
 	framebuffer->Release();
@@ -285,8 +303,8 @@ void connectSharedMemory(std::string name, uint32_t sharedHandle) {
 	//Describe our Depth/Stencil Buffer
 	D3D11_TEXTURE2D_DESC depthStencilDesc;
 
-	depthStencilDesc.Width     = 1920;
-	depthStencilDesc.Height    = 1080;
+	depthStencilDesc.Width     = g_width;
+	depthStencilDesc.Height    = g_height;
 	depthStencilDesc.MipLevels = 1;
 	depthStencilDesc.ArraySize = 1;
 	depthStencilDesc.Format    = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -465,8 +483,8 @@ void connectSharedMemory(std::string name, uint32_t sharedHandle) {
 
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
-	viewport.Width = 1920;
-	viewport.Height = 1080;
+	viewport.Width = g_width;
+	viewport.Height = g_height;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 
@@ -486,19 +504,19 @@ void connectSharedMemory(std::string name, uint32_t sharedHandle) {
 	hr = device_ptr->CreateBuffer(&cbbd, NULL, &cbPerObjectBuffer);
 
 	//Camera information
-	camPosition = DirectX::XMVectorSet( 0.0f, 3.0f, -8.0f, 0.0f );
-	camTarget = DirectX::XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
+	camPosition = DirectX::XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
+	camTarget = DirectX::XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
 	camUp = DirectX::XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
 
 	//Set the View matrix
 	camView = DirectX::XMMatrixLookAtLH( camPosition, camTarget, camUp );
 
 	//Set the Projection matrix
-	camProjection = DirectX::XMMatrixPerspectiveFovLH( 0.4f*3.14f, 1920/1080, 1.0f, 1000.0f);
+	camProjection = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), g_width/g_height, 1.0f, 1000.0f);
 
 		
 	D3D11_SHADER_RESOURCE_VIEW_DESC resourceDesc = {};
-	resourceDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	resourceDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 	resourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	resourceDesc.Texture2D.MipLevels = 1;
 
@@ -508,6 +526,9 @@ void connectSharedMemory(std::string name, uint32_t sharedHandle) {
 						(void **)&output_tex);
 	if (FAILED(hr))
 		return;
+
+	D3D11_TEXTURE2D_DESC pDesc = {0};
+	output_tex->GetDesc(&pDesc);
 
 	hr = device_ptr->CreateShaderResourceView(output_tex, &resourceDesc, &shaderRes);
 	if (FAILED(hr))

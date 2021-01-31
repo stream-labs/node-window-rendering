@@ -26,7 +26,10 @@ Napi::Value createWindowJS(const Napi::CallbackInfo& info)
     // Napi::Buffer<void *> bufferData = info[1].As<Napi::Buffer<void*>>();
 
     // createWindow(name, bufferData.Data());
-    createWindow("", nullptr);
+    int width = info[2].ToNumber().Int32Value();
+    int height = info[3].ToNumber().Int32Value();
+
+    createWindow("", nullptr, width, height);
     return info.Env().Undefined();
 }
 
