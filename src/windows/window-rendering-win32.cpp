@@ -149,8 +149,8 @@ static inline HMODULE load_system_library(const char *name)
 }
 
 void createWindow(std::string name, void **handle, int width, int height) {
-	g_width = 1920;
-	g_height = 1080;
+	g_width = width;
+	g_height = height;
 	DisplayWndClassObj.cbSize = sizeof(WNDCLASSEX);
 	DisplayWndClassObj.style  = 0;
 	DisplayWndClassObj.lpfnWndProc   = DisplayWndProc;
