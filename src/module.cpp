@@ -40,6 +40,14 @@ Napi::Value destroyWindowJS(const Napi::CallbackInfo& info)
     return info.Env().Undefined();
 }
 
+Napi::Value destroyWindowAndSurfaceJS(const Napi::CallbackInfo& info)
+{
+    std::string name = info[0].ToString().Utf8Value();
+
+    window->destroyWindowSurface(name);
+    return info.Env().Undefined();
+}
+
 Napi::Value connectIOSurfaceJS(const Napi::CallbackInfo& info)
 {
     std::string name = info[0].ToString().Utf8Value();
@@ -78,6 +86,9 @@ void Init(Napi::Env env, Napi::Object exports) {
     exports.Set(
         Napi::String::New(env, "destroyWindow"),
         Napi::Function::New(env, destroyWindowJS));
+     exports.Set(
+        Napi::String::New(env, "destroyWindowAndSurface"),
+        Napi::Function::New(env, destroyWindowAndSurfaceJS));
     exports.Set(
         Napi::String::New(env, "connectIOSurface"),
         Napi::Function::New(env, connectIOSurfaceJS));

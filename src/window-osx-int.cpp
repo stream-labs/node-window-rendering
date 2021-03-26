@@ -43,6 +43,11 @@ void WindowInt::destroyWindow(std::string name)
     _impl->destroyWindow(name);
 }
 
+void WindowInt::destroyWindowSurface(std::string name)
+{
+    _impl->destroyWindowSurface(name);
+}
+
 void WindowInt::connectIOSurfaceJS(std::string name, uint32_t surfaceID)
 {
     _impl->connectIOSurfaceJS(name, surfaceID);

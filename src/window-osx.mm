@@ -408,6 +408,48 @@ void WindowObjCInt::createWindow(std::string name, void **handle)
   windows.emplace(name, wi);
 }
 
+void WindowObjCInt::destroyWindowSurface(std::string name)
+{
+  auto it = windows.find(name);
+  if (it == windows.end())
+    return;
+
+  WindowInfo* wi = reinterpret_cast<WindowInfo*>(it->second);
+  if (!wi->view.glData->surface)
+    return;
+
+  this->implMutex.lock();
+  wi->view.glData->mtx.lock();
+  wi->view.glData->stop = true;
+
+  if (wi->view.glData->thread->joinable())
+    wi->view.glData->thread->join();
+  
+  [self _cleanupGL];
+  [NSOpenGLContext clearCurrentContext];
+  [wi->view.glData->mContext release];
+
+
+  wi->destroyed = true;
+  [wi->view removeFromSuperview]; 
+  CFRelease(wi->view);
+
+  if (wi->window)
+    [wi->window close];
+ 
+   windows.erase(name);
+
+  //destroy surface
+  if (wi->view.glData->surface) {
+    CFRelease(wi->view.glData->surface);
+    wi->view.glData->surface = NULL;
+  }
+  //end destroy surface
+
+  wi->view.glData->mtx.unlock();
+  this->implMutex.unlock();
+}
+
 void WindowObjCInt::destroyWindow(std::string name)
 {
   auto it = windows.find(name);
