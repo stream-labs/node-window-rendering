@@ -22,6 +22,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <mutex>
 
 class WindowObjCInt
 {
@@ -32,12 +33,14 @@ public:
     void init(void);
     void createWindow(std::string name, void **handle);
     void destroyWindow(std::string name);
+    void destroyWindowSurface(std::string name);
     void connectIOSurfaceJS(std::string name, uint32_t surfaceID);
     void destroyIOSurface(std::string name);
     void moveWindow(std::string name, uint32_t cx, uint32_t cy);
 
 private:
     void * self;
+    std::mutex implMutex;
 };
 
 #endif

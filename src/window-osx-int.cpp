@@ -38,19 +38,14 @@ void WindowInt::createWindow(std::string name, void **handle)
     _impl->createWindow(name, handle);
 }
 
-void WindowInt::destroyWindow(std::string name)
+void WindowInt::destroyWindowSurface(std::string name)
 {
-    _impl->destroyWindow(name);
+    _impl->destroyWindowSurface(name);
 }
 
 void WindowInt::connectIOSurfaceJS(std::string name, uint32_t surfaceID)
 {
     _impl->connectIOSurfaceJS(name, surfaceID);
-}
-
-void WindowInt::destroyIOSurface(std::string name)
-{
-    _impl->destroyIOSurface(name);
 }
 
 void WindowInt::moveWindow(std::string name, uint32_t cx, uint32_t cy)
