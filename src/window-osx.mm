@@ -380,7 +380,7 @@ void WindowObjCInt::init(void)
     self = [[WindowImplObj alloc] init];
 }
 
-void WindowObjCInt::createWindow(std::string name, void **handle)
+void WindowObjCInt::createWindow(std::string name, void **handle, bool renderAtBottom)
 {
   WindowInfo* wi = new WindowInfo();
 
@@ -401,10 +401,18 @@ void WindowObjCInt::createWindow(std::string name, void **handle)
             ];
     [winParent addChildWindow:wi->window ordered:NSWindowAbove];
     wi->window.ignoresMouseEvents = true;
-    [wi->window.contentView addSubview:wi->view];
+
+    if (renderAtBottom)
+      [wi->window.contentView addSubview:wi->view];
+    else
+      [wi->window.contentView addSubview:wi->view positioned:NSWindowBelow relativeTo:nil];
   } else {
-    [winParent.contentView addSubview:wi->view];
+    if (renderAtBottom)
+      [winParent.contentView addSubview:wi->view positioned:NSWindowBelow relativeTo:nil];
+    else
+      [winParent.contentView addSubview:wi->view];
   }
+
   windows.emplace(name, wi);
 }
 
