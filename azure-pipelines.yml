@@ -69,7 +69,7 @@ jobs:
 
   - task: S3Upload@1
     inputs:
-      awsCredentials: 'SLOBS_BE_AWS'
+      awsCredentials: 'Streamlabs AWS'
       regionName: 'us-west-2'
       bucketName: 'slobs-node-window-rendering'
       globExpressions: '$(tagartifact)-osx-$(arch).tar.gz'
