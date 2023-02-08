@@ -18,7 +18,13 @@ variables:
 jobs:
 - job: 'MacOSX'
   pool:
-    vmImage: 'macos-10.15'
+    vmImage: 'macos-11'
+  strategy:
+    matrix:
+      release-x86_64:
+        arch: x86_64
+      release-arm64:
+        arch: arm64
   workspace:
     clean: all
 
@@ -43,6 +49,8 @@ jobs:
 
   - script: './ci/build-osx.sh'
     displayName: 'Build node-window-rendering'
+    env:
+      ARCHITECTURE: $(arch)
 
   - task: ArchiveFiles@2
     displayName: 'Generate artifact'
@@ -51,20 +59,20 @@ jobs:
       includeRootFolder: true
       archiveType: tar
       tarCompression: gz
-      archiveFile: '$(tagartifact)-osx.tar.gz'
+      archiveFile: '$(tagartifact)-osx-$(arch).tar.gz'
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish build artifact'
     inputs: 
-      pathtoPublish: $(Build.SourcesDirectory)/$(tagartifact)-osx.tar.gz
-      artifactName: $(tagartifact)-osx.tar.gz
+      pathtoPublish: $(Build.SourcesDirectory)/$(tagartifact)-osx-$(arch).tar.gz
+      artifactName: $(tagartifact)-osx-$(arch).tar.gz
 
   - task: S3Upload@1
     inputs:
       awsCredentials: 'SLOBS_BE_AWS'
       regionName: 'us-west-2'
       bucketName: 'slobs-node-window-rendering'
-      globExpressions: '$(tagartifact)-osx.tar.gz'
+      globExpressions: '$(tagartifact)-osx-$(arch).tar.gz'
       filesAcl: 'public-read'
     displayName: 'Upload tag artifact to S3'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'tags'))
