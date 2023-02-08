@@ -11,9 +11,9 @@ variables:
   Generator: Visual Studio 15 2017 Win64
   DistributeDirectory: distribute
   FullDistributePath: $(BuildDirectory)\$(DistributeDirectory)
-  RuntimeURL: https://atom.io/download/atom-shell
+  RuntimeURL: https://artifacts.electronjs.org/headers/dist
   RuntimeName: iojs
-  RuntimeVersion: v9.3.3
+  RuntimeVersion: v17.4.11
 
 jobs:
 - job: 'MacOSX'
